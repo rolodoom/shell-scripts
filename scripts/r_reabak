@@ -1,0 +1,25 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_reabak
+# | |       |  ___  |    
+# | |       | |   | |    REAPER backup files
+# | |_____  | |___| |    Move all backup files to Backup folder
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+#
+#
+#
+
+DIR=$(readlink -f "Backup")
+if [ ! -d "$DIR" ]; then
+    mkdir Backup
+fi
+
+shopt -s nullglob # Sets nullglob
+shopt -s nocaseglob # Sets nocaseglob
+for f in *.rpp-bak; do
+    mv "$f" Backup/
+done
