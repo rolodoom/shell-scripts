@@ -12,9 +12,10 @@
 #
 #
 #
+
 echo "**************************************"
 echo "*                                    *"
-echo "*        LAMP Server Control         *"
+echo "*        LAMP Server Control 2       *"
 echo "*                                    *"
 echo "**************************************"
 echo "Available commands:"
