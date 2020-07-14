@@ -1,0 +1,25 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______   
+# | |       |  ___  |
+# | |       | |   | |    Clean and Tidy SVG
+# | |_____  | |___| |    Usually used when contributing to keeferrourke/la-capitaine-icon-theme
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+#
+
+command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
+command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
+command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
+
+shopt -s nocaseglob # Sets nocaseglob
+i=0
+for ICON in *.svg
+do
+    svgcleaner "$ICON" "$ICON"
+    tidy -q -xml -indent -wrap 0 -m "$ICON"
+    inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+done
