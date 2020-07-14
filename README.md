@@ -1,6 +1,11 @@
 # Shell Scripts
 
 A collection of shell scripts I use on daily basis on my Linux box.
+* r_lamp
+* r_pdfoptimize
+* r_svgcleaner
+* r_reabak
+
 
 # Installing shell-scripts on Linux
 
