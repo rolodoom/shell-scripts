@@ -4,12 +4,16 @@
 # | |       | |   | |    Rolando Ramos Torres (@rolodoom)
 # | |       | |___| |    http://rolandoramostorres.com
 # |_|       |_______|
-#  _         _______   
+#  _         _______     r_svgcleaner
 # | |       |  ___  |
 # | |       | |   | |    Clean and Tidy SVG
 # | |_____  | |___| |    Usually used when contributing to keeferrourke/la-capitaine-icon-theme
 # |_______| |_______|    Tested on Kubuntu 20.04 LTS
 #
+# Requirementes:
+# ->  svgcelaner [ https://github.com/RazrFalcon/svgcleaner ]
+# ->  tidy [ http://www.html-tidy.org/developer ]
+# ->  inkscape - Optional for exporting PNG file
 
 command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
 command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
