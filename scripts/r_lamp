@@ -71,7 +71,7 @@ case "$input" in
     ;;
    
     quit|QUIT|Q|q|exit|EXIT|x|X) 
-    # echo "Bye"
+    echo "Bye!!!!"
     ;;
     
     # NOT IMPLEMENTED
