@@ -10,6 +10,12 @@
 # | |_____  | |___| |    Using eBook settings
 # |_______| |_______|    Tested on Kubuntu 20.04 LTS
 #
+# Requirementes:
+# ->  pdf2ps
+# ->  ps2pdf
+
+command -v pdf2ps >/dev/null 2>&1 || { echo >&2 "I require pdf2ps but it's not installed. Aborting."; exit 1; }
+command -v ps2pdf >/dev/null 2>&1 || { echo >&2 "I require ps2pdf but it's not installed. Aborting."; exit 1; }
 
 shopt -s nullglob # Sets nullglob
 shopt -s nocaseglob # Sets nocaseglob
@@ -19,4 +25,3 @@ for f in *.pdf; do
   ps2pdf -dPDFSETTINGS=/ebook "${f%.*}.ps" "${f%.*}.pdf"
   rm "${f%.*}.ps"
 done
-
