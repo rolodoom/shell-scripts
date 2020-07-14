@@ -7,8 +7,7 @@ A collection of shell scripts I use on daily basis on my Linux box.
 Download the source code from this repository or use a git clone and execute install.sh:
 
 	git clone https://github.com/rolodoom/shell-scripts.git
-	chmod +x shell-scripts/install.sh
-	./shell-scripts/install.sh
+	chmod +x shell-scripts/install.sh && ./shell-scripts/install.sh
 	
 # The Scripts Are Located in /usr/local/bin
 
