@@ -1,0 +1,68 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______   
+# | |       |  ___  |
+# | |       | |   | |    LAMP Server Control
+# | |_____  | |___| |    for my Testing Web server
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+#
+#
+#
+echo "**************************************"
+echo "*                                    *"
+echo "*        LAMP Server Control         *"
+echo "*                                    *"
+echo "**************************************"
+echo "Available commands:"
+echo ""
+echo "  [S]tart"
+echo "  [K]ill"
+echo "  [R]estart"
+echo "  [Q]uit"
+echo ""
+echo -n "Command [S,K,R,Q]:"
+
+read input
+
+echo ""
+
+case "$input" in
+    start|START|S|s)
+    echo "Starting..."
+    sudo service apache2 start
+    sudo service mysql start
+    echo "LAMP Server is ON"
+    ;;
+
+    stop|STOP|K|k)
+    echo "Stopping..."
+    sudo service apache2 stop
+    sudo service mysql stop
+    echo "LAMP Server is OFF"
+    ;;
+    
+    restart|RESTART|R|r)
+    echo "Re-Starting..."
+    sudo service apache2 stop
+    sudo service mysql stop
+    sudo service apache2 start
+    sudo service mysql start
+    echo "LAMP Server is ON"
+    ;;
+    
+    quit|QUIT|Q|q|exit|EXIT) 
+    # echo "Bye"
+    ;;
+    
+    # NOT IMPLEMENTED
+    *)
+    echo "Choose an available command!!!"
+    ;;
+
+esac
+
+echo ""
