@@ -1,0 +1,22 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______   
+# | |       |  ___  |
+# | |       | |   | |    Optimize all PDF files on current directory
+# | |_____  | |___| |    Using eBook settings
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+#
+
+shopt -s nullglob # Sets nullglob
+shopt -s nocaseglob # Sets nocaseglob
+for f in *.pdf; do
+  pdf2ps "$f" "${f%.*}.ps"
+  rm "$f"
+  ps2pdf -dPDFSETTINGS=/ebook "${f%.*}.ps" "${f%.*}.pdf"
+  rm "${f%.*}.ps"
+done
+
