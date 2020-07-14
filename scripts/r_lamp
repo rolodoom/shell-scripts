@@ -15,7 +15,7 @@
 
 echo "**************************************"
 echo "*                                    *"
-echo "*        LAMP Server Control 2       *"
+echo "*        LAMP Server Control         *"
 echo "*                                    *"
 echo "**************************************"
 echo "Available commands:"
