@@ -5,6 +5,7 @@ A collection of shell scripts I use on daily basis on my Linux box.
 * r_pdfoptimize
 * r_svgcleaner
 * r_reabak
+* r_importsql
 
 
 # Installing shell-scripts on Linux
