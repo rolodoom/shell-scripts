@@ -32,6 +32,6 @@ if [ $# -eq 0 ]
         fi
         
         DBNAME="${FILEDB%.*}"
-        zcat $FILEDB | mysql -u $MYSQL_USER -p "${DBNAME%.*}"
+        zcat $FILEDB | mysql -u $MYSQL_USER -p
         
 fi
