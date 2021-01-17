@@ -1,0 +1,16 @@
+
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_git
+# | |       |  ___  |
+# | |       | |   | |    ssh-add for github
+# | |_____  | |___| |    default key on .ssh
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# 
+#
+
+ssh-add ~/.ssh/github
