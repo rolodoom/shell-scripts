@@ -1,0 +1,18 @@
+
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_git_update
+# | |       |  ___  |
+# | |       | |   | |    Commit with generic
+# | |_____  | |___| |    "Update" message
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# 
+#
+
+git add -A
+git commit -m "Update"
+git push
