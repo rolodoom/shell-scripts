@@ -1,0 +1,18 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_git_clean
+# | |       |  ___  |
+# | |       | |   | |    Clean local repository
+# | |_____  | |___| |    Download files
+# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# 
+#
+
+git stash --include-untracked
+git reset --hard
+git clean -fd
+git pull
