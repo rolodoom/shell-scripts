@@ -8,7 +8,7 @@
 # | |       |  ___  |
 # | |       | |   | |    LAMP Server Control
 # | |_____  | |___| |    for my Testing Web server
-# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# |_______| |_______|    Tested on Kubuntu 21.04
 #
 #
 #
@@ -23,7 +23,7 @@ echo ""
 echo "  [S]tart"
 echo "  [K]ill"
 echo "  [R]estart"
-echo "  [P]ublic HTML folder (Set permissions $HOME/public_html)"
+echo "  [P]ublic HTML folder (Set permissions /home/public_html)"
 echo "  [V]ar WWW folder (Set permissions /var/www/)"
 echo "  [Q]uit"
 echo ""
@@ -65,9 +65,9 @@ case "$input" in
     ;;
 
     p|P|public|PUBLIC)
-    echo "Setting permissions on $HOME/public_html folder ..."
-    sudo chown -R www-data:www-data $HOME/public_html/
-    sudo chmod -R g+rwX $HOME/public_html/
+    echo "Setting permissions on /home/public_html folder ..."
+    sudo chown -R www-data:www-data /home/public_html/
+    sudo chmod -R g+rwX /home/public_html/
     echo "Done!"
     ;;
    
