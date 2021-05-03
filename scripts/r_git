@@ -9,8 +9,8 @@
 # | |       |  ___  |
 # | |       | |   | |    ssh-add for github
 # | |_____  | |___| |    default key on .ssh
-# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# |_______| |_______|
 # 
 #
-
+eval `ssh-agent -s`
 ssh-add ~/.ssh/github

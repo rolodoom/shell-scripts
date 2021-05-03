@@ -8,7 +8,7 @@
 # | |       |  ___  |
 # | |       | |   | |    Clean and Tidy SVG
 # | |_____  | |___| |    Usually used when contributing to keeferrourke/la-capitaine-icon-theme
-# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# |_______| |_______|
 #
 # Requirementes:
 # ->  svgcelaner [ https://github.com/RazrFalcon/svgcleaner ]

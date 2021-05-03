@@ -8,7 +8,7 @@
 # | |       |  ___  |
 # | |       | |   | |    Optimize all PDF files on current directory
 # | |_____  | |___| |    Using eBook settings
-# |_______| |_______|    Tested on Kubuntu 20.04 LTS
+# |_______| |_______|
 #
 # Requirementes:
 # ->  pdf2ps
