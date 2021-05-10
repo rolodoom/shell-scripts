@@ -12,4 +12,4 @@
 # |_______| |_______|
 # 
 #
-ssh-add ~/.ssh/github
+eval `keychain --eval github`
