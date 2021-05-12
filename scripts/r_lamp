@@ -43,7 +43,7 @@ case "$input" in
 
     stop|STOP|K|k)
     echo "Stopping..."
-    sudo systemctl stop httpd
+    sudo systemctl stop apache2
     sudo systemctl stop mysql
     echo "LAMP Server is OFF"
     ;;
