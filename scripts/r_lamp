@@ -57,7 +57,7 @@ case "$input" in
     
     h|H|http|HTTP)
     echo "Setting permissions on /var/www/html/ folder ..."
-    sudo chown -R $USER:www-data /var/www/html/
+    sudo chown -R www-data:www-data /var/www/html/
     sudo chmod -R g+rwX /var/www/html/
     echo "Done!"
     ;;
@@ -65,6 +65,7 @@ case "$input" in
     p|P|public|PUBLIC)
     echo "Setting permissions on ~/public_html folder ..."
     sudo chown -R www-data:www-data ~/public_html/
+    sudo chown -R $USER:www-data ~/public_html/myserver
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
