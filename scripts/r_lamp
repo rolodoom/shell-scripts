@@ -24,7 +24,7 @@ echo "  [S]tart"
 echo "  [K]ill"
 echo "  [R]estart"
 echo "  [P]ublic HTML folder (Set permissions ~/public_html)"
-echo "  [H]ttp folder at /srv (Set permissions /srv/http/)"
+echo "  [H]ttp folder at /var/www (Set permissions /var/www/html/)"
 echo "  [Q]uit"
 echo ""
 echo -n "Command [S,K,R,P,V,Q]:"
@@ -36,35 +36,35 @@ echo ""
 case "$input" in
     start|START|S|s)
     echo "Starting..."
-    sudo systemctl start httpd
-    sudo systemctl start mysqld
+    sudo systemctl start apache2
+    sudo systemctl start mysql
     echo "LAMP Server is ON"
     ;;
 
     stop|STOP|K|k)
     echo "Stopping..."
     sudo systemctl stop httpd
-    sudo systemctl stop mysqld
+    sudo systemctl stop mysql
     echo "LAMP Server is OFF"
     ;;
     
     restart|RESTART|R|r)
     echo "Re-Starting..."
-    sudo systemctl restart httpd
-    sudo systemctl restart mysqld
+    sudo systemctl restart apache2
+    sudo systemctl restart mysql
     echo "LAMP Server is ON"
     ;;
     
-    v|V|var|VAR|w|W|www|WWW)
-    echo "Setting permissions on /srv/http/ folder ..."
-    sudo chown -R http:http /srv/http/
-    sudo chmod -R g+rwX /srv/http/
+    h|H|http|HTTP)
+    echo "Setting permissions on /var/www/html/ folder ..."
+    sudo chown -R www-data:www-data /var/www/html/
+    sudo chmod -R g+rwX /var/www/html/
     echo "Done!"
     ;;
 
     p|P|public|PUBLIC)
     echo "Setting permissions on ~/public_html folder ..."
-    sudo chown -R http:http ~/public_html/
+    sudo chown -R www-data:www-data ~/public_html/
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
