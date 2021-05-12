@@ -57,7 +57,7 @@ case "$input" in
     
     h|H|http|HTTP)
     echo "Setting permissions on /var/www/html/ folder ..."
-    sudo chown -R www-data:www-data /var/www/html/
+    sudo chown -R $USER:www-data /var/www/html/
     sudo chmod -R g+rwX /var/www/html/
     echo "Done!"
     ;;
