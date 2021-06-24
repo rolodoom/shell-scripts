@@ -25,9 +25,10 @@ echo "  [K]ill"
 echo "  [R]estart"
 echo "  [P]ublic HTML folder (Set permissions ~/public_html)"
 echo "  [W]ww folder at /var/www (Set permissions /var/www/html/)"
+echo "  [C]urrent folder at . (Set permissions . )"
 echo "  [Q]uit"
 echo ""
-echo -n "Command [S,K,R,P,W,Q]:"
+echo -n "Command [S,K,R,P,W,C,Q]:"
 
 read input
 
@@ -69,6 +70,14 @@ case "$input" in
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
+
+    c|C|current|CURRENT)
+    echo "Setting permissions on current folder ..."
+    sudo chown -R www-data:www-data .
+    sudo chmod -R g+rwX .
+    echo "Done!"
+    ;;
+
    
     quit|QUIT|Q|q|exit|EXIT|x|X) 
     echo "Bye!!!!"
