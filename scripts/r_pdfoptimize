@@ -11,17 +11,14 @@
 # |_______| |_______|
 #
 # Requirementes:
-# ->  pdf2ps
-# ->  ps2pdf
+# ->  gs
 
-command -v pdf2ps >/dev/null 2>&1 || { echo >&2 "I require pdf2ps but it's not installed. Aborting."; exit 1; }
-command -v ps2pdf >/dev/null 2>&1 || { echo >&2 "I require ps2pdf but it's not installed. Aborting."; exit 1; }
+command -v gs >/dev/null 2>&1 || { echo >&2 "I require gs but it's not installed. Aborting."; exit 1; }
 
 shopt -s nullglob # Sets nullglob
 shopt -s nocaseglob # Sets nocaseglob
 for f in *.pdf; do
-  pdf2ps "$f" "${f%.*}.ps"
-  rm "$f"
-  ps2pdf -dPDFSETTINGS=/ebook "${f%.*}.ps" "${f%.*}.pdf"
-  rm "${f%.*}.ps"
+  gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
+  -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH \
+  -sOutputFile="${f%.*}-optimized.pdf" "$f"
 done
