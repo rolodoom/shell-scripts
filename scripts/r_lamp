@@ -15,7 +15,7 @@
 
 if [ $# -eq 0 ]
     then
-        echo "No arguments supplied"
+        echo "No distro supplied. Available: ubuntu,manjaro"
         exit;
     else
         case $1 in
@@ -37,7 +37,7 @@ if [ $# -eq 0 ]
             ;;
             # NOT IMPLEMENTED
             *)
-            echo "Distro not supported"
+            echo "Distro \"$1\" not supported"
             exit;
             ;;
         esac
