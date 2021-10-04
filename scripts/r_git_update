@@ -6,8 +6,8 @@
 # |_|       |_______|
 #  _         _______     r_git_update
 # | |       |  ___  |
-# | |       | |   | |    Commit with generic
-# | |_____  | |___| |    "Update" message
+# | |       | |   | |    Commit with custom message
+# | |_____  | |___| |    "Update" message if no argument provided
 # |_______| |_______|
 # 
 #
