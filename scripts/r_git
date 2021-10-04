@@ -15,6 +15,10 @@
 # Requirementes:
 # ->  keychain
 
-command -v keychain >/dev/null 2>&1 || { echo >&2 "I require keychain but it's not installed. Aborting."; exit 1; }
 
-eval `keychain --eval github`
+# Ubuntu
+#command -v keychain >/dev/null 2>&1 || { echo >&2 "I require keychain but it's not installed. Aborting."; exit 1; }
+#eval `keychain --eval github`
+
+# Manjaro
+eval "$(ssh-agent -s)" && ssh-add ~/.ssh/github
