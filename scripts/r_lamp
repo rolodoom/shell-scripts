@@ -119,7 +119,6 @@ case "$input" in
     echo "Choose an available command!!!"
     ;;
 
-
 esac
 
 echo ""
