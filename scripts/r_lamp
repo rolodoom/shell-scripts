@@ -13,67 +13,98 @@
 #
 #
 
+if [ $# -eq 0 ]
+    then
+        echo "No arguments supplied"
+        exit;
+    else
+        case $1 in
+            manjaro|MANJARO|Manjaro)
+            DISTRO="arch"
+            APACHECMD='httpd'
+            MYSQLCMD='mysqld'
+            SERVERGROUP='http'
+            SERVERUSER='http'
+            SERVERDIR='/srv/http/'
+            ;;
+            debian|DEBIAN|Debian|ubuntu|UBUNTU|Ubuntu)
+            DISTRO="debian"
+            APACHECMD='apache2'
+            MYSQLCMD='mysql'
+            SERVERGROUP='www-data'
+            SERVERUSER='www-data'
+            SERVERDIR='/var/www/html/'
+            ;;
+            # NOT IMPLEMENTED
+            *)
+            echo "Distro not supported"
+            exit;
+            ;;
+        esac
+fi
+
 echo "**************************************"
 echo "*                                    *"
 echo "*        LAMP Server Control         *"
 echo "*                                    *"
 echo "**************************************"
+echo ""
 echo "Available commands:"
 echo ""
-echo "  [S]tart"
-echo "  [K]ill"
-echo "  [R]estart"
-echo "  [P]ublic HTML folder (Set permissions ~/public_html)"
-echo "  [W]ww folder at /var/www (Set permissions /var/www/html/)"
-echo "  [C]urrent folder at . (Set permissions . )"
+echo "  [1] Start"
+echo "  [2] Kill"
+echo "  [3] Restart"
+echo "  [4] Public HTML folder (Set permissions ~/public_html)"
+echo "  [5] Server Root Directory (Set permissions)"
+echo "  [6] Current folder at . (Set permissions . )"
 echo "  [Q]uit"
 echo ""
-echo -n "Command [S,K,R,P,W,C,Q]:"
+echo -n "Command [1,2,3,4,5,6,Q]:"
 
 read input
 
 echo ""
 
 case "$input" in
-    start|START|S|s)
+    1)
     echo "Starting..."
-    sudo systemctl start apache2
-    sudo systemctl start mysql
+    sudo systemctl start "$APACHECMD"
+    sudo systemctl start "$MYSQLCMD"
     echo "LAMP Server is ON"
     ;;
 
-    stop|STOP|K|k)
+    2)
     echo "Stopping..."
-    sudo systemctl stop apache2
-    sudo systemctl stop mysql
+    sudo systemctl stop "$APACHECMD"
+    sudo systemctl stop "$MYSQLCMD"
     echo "LAMP Server is OFF"
     ;;
     
-    restart|RESTART|R|r)
+    3)
     echo "Re-Starting..."
-    sudo systemctl restart apache2
-    sudo systemctl restart mysql
+    sudo systemctl restart "$APACHECMD"
+    sudo systemctl restart "$MYSQLCMD"
     echo "LAMP Server is ON"
     ;;
     
-    w|W|www|WWW)
-    echo "Setting permissions on /var/www/html/ folder ..."
-    sudo chown -R www-data:www-data /var/www/html/
-    sudo chmod -R g+rwX /var/www/html/
-    echo "Done!"
-    ;;
-
-    p|P|public|PUBLIC)
+    4)
     echo "Setting permissions on ~/public_html folder ..."
-    sudo chown -R www-data:www-data ~/public_html/
-    sudo chown -R $USER:www-data ~/public_html/myserver
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" ~/public_html/
+    sudo chown -R $USER:"$SERVERGROUP" ~/public_html/myserver
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
 
-    c|C|current|CURRENT)
+    5)
+    echo "Setting permissions on Default Server Directory folder ..."
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" "$SERVERDIR"
+    sudo chmod -R g+rwX "$SERVERDIR"
+    echo "Done!"
+    ;;
+
+    6)
     echo "Setting permissions on current folder ..."
-    sudo chown -R www-data:www-data .
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" .
     sudo chmod -R g+rwX .
     echo "Done!"
     ;;
