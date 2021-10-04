@@ -89,8 +89,7 @@ case "$input" in
     
     4)
     echo "Setting permissions on ~/public_html folder ..."
-    sudo chown -R $USER:"$SERVERGROUP" ~/public_html/
-    sudo chown -R $USER:"$SERVERGROUP" ~/public_html/myserver
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" ~/public_html/
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
@@ -104,7 +103,7 @@ case "$input" in
 
     6)
     echo "Setting permissions on current folder ..."
-    sudo chown -R $USER:"$SERVERGROUP" .
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" .
     sudo chmod -R g+rwX .
     echo "Done!"
     ;;
