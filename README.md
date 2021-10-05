@@ -6,8 +6,8 @@ A collection of shell scripts I use on daily basis on my Linux box.
 * r_svgcleaner
 * r_reabak
 * r_importsql
-* r_git
 * r_git_clean
+* r_git_update
 
 
 # Installing shell-scripts on Linux
