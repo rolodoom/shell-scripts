@@ -3,6 +3,7 @@
 A collection of shell scripts I use on daily basis on my Linux box.
 * r_lamp
 * r_pdfoptimize
+* r_pdfmultiple
 * r_svgcleaner
 * r_reabak
 * r_importsql
