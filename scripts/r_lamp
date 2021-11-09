@@ -15,11 +15,11 @@
 
 if [ $# -eq 0 ]
     then
-        echo "No distro supplied. Available: ubuntu,manjaro"
+        echo "No distro supplied. Available: debian,ubuntu,arch"
         exit;
     else
         case $1 in
-            manjaro|MANJARO|Manjaro)
+            arch|Arch|ARCH|manjaro|Manjaro|MANJARO)
             DISTRO="arch"
             APACHECMD='httpd'
             MYSQLCMD='mysqld'
