@@ -20,10 +20,46 @@ command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not insta
 command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
 
 shopt -s nocaseglob # Sets nocaseglob
-i=0
-for ICON in *.svg
-do
+
+
+function process_icon (){
+    ICON=$1
+    #echo "process the icon ${ICON}"
     svgcleaner "$ICON" "$ICON"
     tidy -q -xml -indent -wrap 0 -m "$ICON"
     inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
-done
+}
+
+
+if [ $# -eq 0 ]
+    then
+        echo "No arguments supplied"
+    else
+        file=$1
+        case $file in
+            # ALL FILES IN FOLDER
+            .)
+            #
+            for icon in *.svg
+            do
+                process_icon $icon
+            done
+            exit;
+            ;;
+            # DEFAULT -  ONE SPECIFIC FILE
+            *)
+            # Cheking if file exists and is a valid file
+            if [ -f $file ] && [ "${file: -4}" == ".svg" ]; then
+                # File is exist and is allowed
+                process_icon $file
+            else
+                echo "File \"${file}\" doesn't exist or is not a valid SVG file!"
+            fi
+            exit;
+            ;;
+        esac
+
+fi
+
+
+
