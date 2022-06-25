@@ -25,7 +25,7 @@ if [ $# -eq 0 ]
             MYSQLCMD='mysqld'
             SERVERGROUP='http'
             SERVERUSER='http'
-	    LOCALUSER=$USER
+            LOCALUSER=$USER
             SERVERDIR='/srv/http/'
             ;;
             debian|DEBIAN|Debian|ubuntu|UBUNTU|Ubuntu)
@@ -34,7 +34,7 @@ if [ $# -eq 0 ]
             MYSQLCMD='mysql'
             SERVERGROUP='www-data'
             SERVERUSER='www-data'
-	    LOCALUSER=$USER
+            LOCALUSER=$USER
             SERVERDIR='/var/www/html/'
             ;;
             # NOT IMPLEMENTED
@@ -58,10 +58,11 @@ echo "  [2] Kill"
 echo "  [3] Restart"
 echo "  [4] Public HTML folder (Set permissions ~/public_html)"
 echo "  [5] Server Root Directory (Set permissions)"
-echo "  [6] Current folder at . (Set permissions . )"
+echo "  [6] Current folder at . (Set permission to \"$SERVERUSER\" )"
+echo "  [7] Current folder at . (Set permission to \"$USER\" )"
 echo "  [Q]uit"
 echo ""
-echo -n "Command [1,2,3,4,5,6,Q]:"
+echo -n "Command [1,2,3,4,5,6,7,Q]:"
 
 read input
 
@@ -104,11 +105,20 @@ case "$input" in
     ;;
 
     6)
-    echo "Setting permissions on current folder ..."
+    echo "Setting permissions on current folder to \"$SERVERUSER\" ..."
+    sudo chown -R "$SERVERUSER":"$SERVERGROUP" .
+    sudo chmod -R g+rwX .
+    echo "Done!"
+    ;;
+
+
+    7)
+    echo "Setting permissions on current folder to \"$USER\" ..."
     sudo chown -R "$LOCALUSER":"$SERVERGROUP" .
     sudo chmod -R g+rwX .
     echo "Done!"
     ;;
+
 
     quit|QUIT|Q|q|exit|EXIT|x|X) 
     echo "Bye!!!!"
