@@ -25,6 +25,7 @@ if [ $# -eq 0 ]
             MYSQLCMD='mysqld'
             SERVERGROUP='http'
             SERVERUSER='http'
+	    LOCALUSER=$USER
             SERVERDIR='/srv/http/'
             ;;
             debian|DEBIAN|Debian|ubuntu|UBUNTU|Ubuntu)
@@ -33,6 +34,7 @@ if [ $# -eq 0 ]
             MYSQLCMD='mysql'
             SERVERGROUP='www-data'
             SERVERUSER='www-data'
+	    LOCALUSER=$USER
             SERVERDIR='/var/www/html/'
             ;;
             # NOT IMPLEMENTED
@@ -89,7 +91,7 @@ case "$input" in
     
     4)
     echo "Setting permissions on ~/public_html folder ..."
-    sudo chown -R "$SERVERUSER":"$SERVERGROUP" ~/public_html/
+    sudo chown -R "$LOCALUSER":"$SERVERGROUP" ~/public_html/
     sudo chmod -R g+rwX ~/public_html/
     echo "Done!"
     ;;
@@ -103,7 +105,7 @@ case "$input" in
 
     6)
     echo "Setting permissions on current folder ..."
-    sudo chown -R "$SERVERUSER":"$SERVERGROUP" .
+    sudo chown -R "$LOCALUSER":"$SERVERGROUP" .
     sudo chmod -R g+rwX .
     echo "Done!"
     ;;
