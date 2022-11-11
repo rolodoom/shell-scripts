@@ -1,0 +1,102 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_flatheme
+# | |       |  ___  |
+# | |       | |   | |    Set GTK Theme for Flatpak on KDE Plasma
+# | |_____  | |___| |    Based on https://forum.manjaro.org/t/how-to-consistent-flatpak-theming-in-kde-plasma/7259
+# |_______| |_______|
+# 
+#
+COMMAND_NAME="r_flatheme"
+
+############################################################
+# Help                                                     #
+############################################################
+Help()
+{
+   # Display Help
+   echo
+   echo "Usage: $COMMAND_NAME [OPTIONS]"
+   echo
+   echo "Set the GTK Theme for Flatpak on KDE Plasma."
+   echo
+   echo "Options:"
+   echo "  -h     Print this Help."
+   echo "  -s     Set the GTK theme."
+   echo "  -u     Unset the GTK theme."
+   echo
+}
+
+############################################################
+# SetGTK                                                   #
+############################################################
+SetGTK()
+{
+   # Set GTK Theme
+   for dir in $HOME/.var/app/*/
+   do
+      confdir="${dir}config/gtk-3.0"
+      mkdir -p $confdir
+      cp $HOME/.config/gtk-3.0/settings.ini $confdir/settings.ini
+   done
+   echo 
+   echo "setting gtk theme... done!"
+   echo Help2
+}
+
+############################################################
+# UnsetGTK                                                 #
+############################################################
+UnsetGTK()
+{
+   # Unset GTK Theme
+   for dir in $HOME/.var/app/*/
+   do
+      confdir="${dir}config/gtk-3.0"
+      rm -rf $confdir/settings.ini
+   done
+   echo 
+   echo "unsetting gtk theme... done!"
+   echo 
+}
+
+############################################################
+# InvalidOption                                            #
+############################################################
+InvalidOption()
+{
+   # Display Invalid Option Text
+   echo
+   echo "$COMMAND_NAME: invalid option."
+   echo "See '$COMMAND_NAME -h'"
+   echo
+}
+
+############################################################
+# Main Program                                             #
+############################################################
+
+############################################################
+# Process the input options. Add options as needed.        #
+############################################################
+# Get the options
+while getopts ":hsu" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+      s) # set GTK Theme
+         SetGTK
+         exit;;
+      u) # unset GTK Theme
+         UnsetGTK
+         exit;;
+      \?) # Invalid option
+         InvalidOption
+         exit;;
+   esac
+done
