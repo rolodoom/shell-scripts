@@ -45,7 +45,7 @@ SetGTK()
    done
    echo 
    echo "setting gtk theme... done!"
-   echo Help2
+   echo
 }
 
 ############################################################
@@ -79,6 +79,13 @@ InvalidOption()
 ############################################################
 # Main Program                                             #
 ############################################################
+
+# No option supplied
+if [ $# -eq 0 ]
+    then
+        Help
+        exit;
+fi
 
 ############################################################
 # Process the input options. Add options as needed.        #
