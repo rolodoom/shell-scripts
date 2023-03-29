@@ -15,7 +15,7 @@
 
 # Define function to display usage information.
 function show_usage {
-  echo "Usage: $0 --imagepath <path> --string <string> --position <before|after>"
+  echo "Usage: $0 -i|--imagepath <path> -s|--string <string> [-p|--position <before|after>] [-h|--help]"
   echo ""
   echo "Description:"
   echo "  This script adds a given string to the filenames of all image files"
@@ -23,31 +23,35 @@ function show_usage {
   echo "  within a specified folder."
   echo ""
   echo "Options:"
-  echo "  --imagepath <path>   The path to the folder containing the image files."
-  echo "  --string <string>    The string to add to the filenames."
-  echo "  --position <before|after>"
-  echo "                       The position at which to add the string. Must be"
-  echo "                       'before' or 'after'."
+  echo "  -i, --imagepath <path>    The path to the folder containing the image files."
+  echo "  -s, --string <string>     The string to add to the filenames."
+  echo "  -p, --position <before|after>"
+  echo "                            The position at which to add the string. Must be"
+  echo "                            'before' or 'after'. Default is 'before'."
+  echo "  -h, --help                Show usage information."
   exit 1
 }
+
+# Set default values.
+position="before"
 
 # Parse command-line arguments.
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-    --imagepath)
+    -i|--imagepath)
       imagepath="$2"
       shift 2
       ;;
-    --string)
+    -s|--string)
       string="$2"
       shift 2
       ;;
-    --position)
+    -p|--position)
       position="$2"
       shift 2
       ;;
-    --help)
+    -h|--help)
       show_usage
       ;;
     *)
@@ -57,7 +61,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if required arguments were passed.
-if [ -z "$imagepath" ] || [ -z "$string" ] || [ -z "$position" ]; then
+if [ -z "$imagepath" ] || [ -z "$string" ]; then
+  echo "Error: Missing required argument(s)."
   show_usage
 fi
 
