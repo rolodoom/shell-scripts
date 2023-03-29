@@ -1,0 +1,85 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |
+# | |_____  | |___| |    r_img_rename
+# |_______| |_______|    Adds a given string to the filenames of all image files
+#
+#
+#
+
+# Define function to display usage information.
+function show_usage {
+  echo "Usage: $0 --imagepath <path> --string <string> --position <before|after>"
+  echo ""
+  echo "Description:"
+  echo "  This script adds a given string to the filenames of all image files"
+  echo "  (i.e., files with the extensions 'jpg', 'jpeg', 'png', 'gif', and 'bmp')"
+  echo "  within a specified folder."
+  echo ""
+  echo "Options:"
+  echo "  --imagepath <path>   The path to the folder containing the image files."
+  echo "  --string <string>    The string to add to the filenames."
+  echo "  --position <before|after>"
+  echo "                       The position at which to add the string. Must be"
+  echo "                       'before' or 'after'."
+  exit 1
+}
+
+# Parse command-line arguments.
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    --imagepath)
+      imagepath="$2"
+      shift 2
+      ;;
+    --string)
+      string="$2"
+      shift 2
+      ;;
+    --position)
+      position="$2"
+      shift 2
+      ;;
+    --help)
+      show_usage
+      ;;
+    *)
+      show_usage
+      ;;
+  esac
+done
+
+# Check if required arguments were passed.
+if [ -z "$imagepath" ] || [ -z "$string" ] || [ -z "$position" ]; then
+  show_usage
+fi
+
+# Loop through all image files in the folder.
+for file in $imagepath/*.{jpg,jpeg,png,gif,bmp}; do
+  # Check if the file is a regular file (not a directory).
+  if [ -f "$file" ]; then
+    # Get the file's current name and extension.
+    filename=$(basename "$file")
+    extension="${filename##*.}"
+
+    # Add the string before or after the filename, depending on the position.
+    if [ "$position" = "before" ]; then
+      newname="${string}-${filename}"
+    elif [ "$position" = "after" ]; then
+      newname="${filename%.*}-${string}.${extension}"
+    else
+      echo "Error: Invalid 'position' argument. Must be 'before' or 'after'."
+      exit 1
+    fi
+
+    # Rename the file.
+    mv "$file" "$imagepath/$newname"
+  fi
+done
