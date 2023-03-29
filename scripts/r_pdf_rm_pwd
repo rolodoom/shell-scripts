@@ -1,0 +1,80 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |
+# | |_____  | |___| |    r_pdf_rm_pwd
+# |_______| |_______|    Remove password from all PDF files in a folder.
+#
+#
+#
+
+# Initialize variables with default values
+password=
+folder_path=$(pwd)
+
+# Check if pdftk command is available
+if ! command -v pdftk &> /dev/null; then
+  echo "pdftk is not available. Please install it first."
+  exit 1
+fi
+
+# Define usage function
+usage() {
+  echo "Usage: $0 [-h] [-p|--password <PASSWORD>] [-f|--folder <FOLDER_PATH>]"
+  echo "Remove password from all PDF files in a folder."
+  echo
+  echo "OPTIONS:"
+  echo "  -h, --help                 Show this help message and exit."
+  echo "  -p, --password <PASSWORD>"
+  echo "                             Specify the password to use for all PDF files."
+  echo "                             If not provided, the script will prompt for it."
+  echo "  -f, --folder <FOLDER_PATH>"
+  echo "                             Specify the folder path where the PDF files are located."
+  echo "                             If not provided, the current working directory will be used."
+}
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -p|--password)
+      password=$2
+      shift
+      ;;
+    -f|--folder)
+      folder_path=$2
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+  shift
+done
+
+# Prompt for password if not provided
+if [[ -z "$password" ]]; then
+  read -sp "Enter the password for the PDF files: " password
+  echo
+fi
+
+# Loop through all PDF files in the folder and process each one
+for file_path in "$folder_path"/*.pdf; do
+  if [[ -f "$file_path" ]]; then
+    # Extract filename without extension
+    filename=$(basename "$file_path" .pdf)
+    # Build output filename
+    output_filename="${filename}--output.pdf"
+    # Remove password from input file and save as output file
+    pdftk "$file_path" input_pw "$password" output "$output_filename"
+    echo "Password removed from $file_path and saved as $output_filename"
+  fi
+done
