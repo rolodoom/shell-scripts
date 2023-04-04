@@ -4,23 +4,36 @@
 # | |       | |   | |    Rolando Ramos Torres (@rolodoom)
 # | |       | |___| |    http://rolandoramostorres.com
 # |_|       |_______|
-#  _         _______     r_svgcleaner
+#  _         _______     
 # | |       |  ___  |
-# | |       | |   | |    Clean and Tidy SVG
-# | |_____  | |___| |    Usually used when contributing to keeferrourke/la-capitaine-icon-theme
+# | |       | |   | |    r_svgcleaner
+# | |_____  | |___| |    SVG batch processing script with svgcleaner, tidy, and inkscape
 # |_______| |_______|
 #
-# Requirementes:
-# ->  svgcelaner [ https://github.com/RazrFalcon/svgcleaner ]
-# ->  tidy [ http://www.html-tidy.org/developer ]
-# ->  inkscape - Optional for exporting PNG file
 
+# Check if required commands are available
+command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
+command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
+command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
+
+# Define a function to display help information
 function display_help {
     echo "Usage: $(basename "$0") [FILE]"
     echo "  -h              Display this help message"
     echo "  FILE            SVG file to process, or '.' to process all SVG files in the current directory"
 }
 
+
+# Define a function to process an SVG icon
+function process_icon (){
+    ICON=$1
+    #echo "process the icon ${ICON}"
+    svgcleaner "$ICON" "$ICON"
+    tidy -q -xml -indent -wrap 0 -m "$ICON"
+    inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+}
+
+# Use getopts to handle the '-h' flag
 while getopts "h" option; do
     case $option in
         h)
@@ -35,23 +48,15 @@ while getopts "h" option; do
     esac
 done
 
+# Remove the processed arguments
 shift $((OPTIND-1))
 
-command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
-command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
-command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
 
+# Set nocaseglob to make file matching case-insensitive
 shopt -s nocaseglob # Sets nocaseglob
 
 
-function process_icon (){
-    ICON=$1
-    #echo "process the icon ${ICON}"
-    svgcleaner "$ICON" "$ICON"
-    tidy -q -xml -indent -wrap 0 -m "$ICON"
-    inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
-}
-
+# Check if the script is called without arguments
 if [ $# -eq 0 ]
 then
     echo "No arguments supplied"
@@ -60,7 +65,7 @@ then
 else
     file=$1
     case $file in
-        # ALL FILES IN FOLDER
+        # Process all SVG files in the current directory
         .)
             for icon in *.svg
             do
@@ -68,11 +73,11 @@ else
             done
             exit;
             ;;
-        # DEFAULT -  ONE SPECIFIC FILE
+        # Process one specific SVG file
         *)
-            # Checking if file exists and is a valid file
+            # Check if the file exists and is a valid SVG file
             if [ -f $file ] && [ "${file: -4}" == ".svg" ]; then
-                # File is exist and is allowed
+                # Process the SVG file
                 process_icon $file
             else
                 echo "File \"${file}\" doesn't exist or is not a valid SVG file!"
