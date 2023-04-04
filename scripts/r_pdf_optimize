@@ -1,0 +1,24 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_pdfoptimize
+# | |       |  ___  |
+# | |       | |   | |    Optimize all PDF files on current directory
+# | |_____  | |___| |    Using eBook settings
+# |_______| |_______|
+#
+# Requirementes:
+# ->  gs
+
+command -v gs >/dev/null 2>&1 || { echo >&2 "I require gs but it's not installed. Aborting."; exit 1; }
+
+shopt -s nullglob # Sets nullglob
+shopt -s nocaseglob # Sets nocaseglob
+for f in *.pdf; do
+  gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
+  -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH \
+  -sOutputFile="${f%.*}-optimized.pdf" "$f"
+done
