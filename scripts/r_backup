@@ -1,0 +1,103 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     
+# | |       |  ___  |
+# | |       | |   | |    r_backup
+# | |_____  | |___| |    Syncs multiple folders to a destination folder using rsync.
+# |_______| |_______|
+# 
+#
+
+# This script syncs multiple folders to a destination folder using rsync.
+# The script takes two command line arguments: a destination folder path (-d) and one or more source folder paths (-f).
+# If the destination folder path is not provided, or is not a valid directory, the script will exit with an error message.
+# If the source folder paths are not provided, the script will exit with an error message.
+# If a source folder does not exist, the script will exit with an error message.
+# If the user does not have sufficient permissions to write to the destination directory, the script will exit with an error message.
+# If a source folder already exists in the destination folder, the script will prompt the user to replace the existing folder or skip syncing that folder.
+# The script will display progress information while syncing folders using rsync.
+# After all folders are synced, the script will display a success message.
+
+
+# Initialize variables
+destination=""
+folders=()
+
+
+# Define usage function
+function usage {
+  echo "Usage: $(basename $0) -d DESTINATION -f FOLDER1 FOLDER2 ..."
+  exit 1
+}
+
+# Parse command line options
+while getopts ":d:f:h" opt; do
+  case "$opt" in
+    d) destination="$OPTARG";;
+    f) shift 3; folders+=("$@");;
+    h) usage;;
+    :) echo "Option -$OPTARG requires an argument."; exit 1;;
+    \?) echo "Invalid option: -$OPTARG"; exit 1;;
+  esac
+done
+
+
+
+# If no arguments were passed, display usage and exit
+if [ "$#" -eq 0 ]; then
+  usage
+  exit 1
+fi
+
+# Check that destination is provided
+if [ -z "${destination+x}" ]; then
+  echo "Error: destination path is required."
+  usage
+  exit 1
+fi
+
+# Check that destination is a valid path
+if [ ! -d "$destination" ]; then
+  echo "Error: $destination is not a valid directory."
+  exit 1
+fi
+
+# If folders array is empty, exit with error message
+if [ ${#folders[@]} -eq 0 ]; then
+  echo "Error: no folders to sync specified."
+  usage
+  exit 1
+fi
+
+
+
+# Loop through folders and sync with rsync
+for ((i=0; i<${#folders[@]}; i++)); do
+  folder=${folders[i]}
+  # Check if folder exists
+  if [ ! -d "$folder" ]; then
+    echo "Error: $folder is not a valid directory."
+    exit 1
+  fi
+  # Extract folder name from full path
+  folder_name="$(basename $folder)"
+  # Check if folder already exists in destination
+  if [ -d "${destination}/${folder_name}" ]; then
+    echo "Warning: ${folder_name} already exists in ${destination}."
+    read -p "Do you want to replace the existing folder? (y/n): " choice
+    case "$choice" in 
+      y|Y ) echo "Replacing ${folder_name} in ${destination}..."; sudo -S rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after;;
+      n|N ) echo "Skipping ${folder_name} in ${destination}...";;
+      * ) echo "Invalid choice. Skipping ${folder_name} in ${destination}...";;
+    esac
+  else
+    echo "Copying ${folder} to ${destination}/${folder_name}..."
+    sudo -S rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after
+  fi
+done
+
+echo "All folders synced successfully."
