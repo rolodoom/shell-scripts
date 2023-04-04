@@ -2,29 +2,45 @@
 
 A collection of shell scripts I use on daily basis on my Linux box.
 
-- r_lamp
-- r_pdfoptimize
-- r_pdfmultiple
-- r_svgcleaner
-- r_reabak
-- r_importsql
-- r_git_clean
-- r_git_update
-- r_flatheme
+## Status
 
-# Installing shell-scripts on Linux
+[![GitHub license](https://img.shields.io/badge/license-GPL--3.0-blue)](https://raw.githubusercontent.com/rolodoom/shell-scripts/master/LICENSE)
+
+## Usage
+
+### Install
 
 Download the source code from this repository or use a git clone and execute install.sh:
 
-    git clone https://github.com/rolodoom/shell-scripts.git
-    chmod +x shell-scripts/install.sh && ./shell-scripts/install.sh
+```bash
+git clone https://github.com/rolodoom/shell-scripts.git
+chmod +x shell-scripts/install.sh && ./shell-scripts/install.sh
+```
 
-# The Scripts Are Located in /usr/local/bin
+**NOTE:** install.sh will delete the donwloaded shell-scripts folder.
 
-I usually store this scripts in:
+### Basic usage
 
-    /usr/local/bin
+I usually store this scripts in `/usr/local/bin` and use 'r\_' as preffix so I don't get confuse with system commands:
 
-I use 'r\_' as preffix so I don't get confuse with system commands:
+```
+r_command
+```
 
-    r_command
+### Help
+
+Some script have help information as an standar linux command or display one if no options are passed to the command.
+
+```
+r_command -h
+```
+
+I will be adding missing help as soon as I have time.
+
+## Bugs and Issues
+
+Have a bug or an issue with this template? [Open a new issue](https://github.com/rolodoom/shell-scripts/issues) here on GitHub.
+
+## License
+
+This code is released under the [GPL-3.0](https://github.com/rolodoom/shell-scripts/blob/master/LICENSE) license, which means you have the four freedoms to run, study, share, and modify the software. Any derivative work must be distributed under the same or equivalent license terms.
