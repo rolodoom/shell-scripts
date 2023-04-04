@@ -11,25 +11,24 @@
 # |_______| |_______|
 # 
 #
-COMMAND_NAME="r_flatheme"
 
 ############################################################
 # Help                                                     #
 ############################################################
-Help()
-{
-   # Display Help
-   echo
-   echo "Usage: $COMMAND_NAME [OPTIONS]"
-   echo
-   echo "Set the GTK Theme for Flatpak on KDE Plasma."
-   echo
-   echo "Options:"
-   echo "  -h     Print this Help."
-   echo "  -s     Set the GTK theme."
-   echo "  -u     Unset the GTK theme."
-   echo
+Help() {
+  cat << EOF
+Usage: $(basename $0) [OPTIONS]
+
+Set the GTK Theme for Flatpak on KDE Plasma.
+
+OPTIONS:
+  -h     Display this help message
+  -s     Set the GTK theme for Flatpak.
+  -u     Unset the GTK theme for Flatpak.
+EOF
+  exit 1
 }
+
 
 ############################################################
 # SetGTK                                                   #
@@ -43,9 +42,7 @@ SetGTK()
       mkdir -p $confdir
       cp $HOME/.config/gtk-3.0/settings.ini $confdir/settings.ini
    done
-   echo 
-   echo "setting gtk theme... done!"
-   echo
+   echo -e "\nsetting gtk theme... done!\n"
 }
 
 ############################################################
@@ -59,9 +56,7 @@ UnsetGTK()
       confdir="${dir}config/gtk-3.0"
       rm -rf $confdir/settings.ini
    done
-   echo 
-   echo "unsetting gtk theme... done!"
-   echo 
+   echo -e "\nunsetting gtk theme... done!\n"
 }
 
 ############################################################
@@ -70,10 +65,8 @@ UnsetGTK()
 InvalidOption()
 {
    # Display Invalid Option Text
-   echo
-   echo "$COMMAND_NAME: invalid option."
-   echo "See '$COMMAND_NAME -h'"
-   echo
+   echo -e "$COMMAND_NAME: invalid option.\n"
+   Help
 }
 
 ############################################################

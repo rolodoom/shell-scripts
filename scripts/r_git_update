@@ -4,25 +4,49 @@
 # | |       | |   | |    Rolando Ramos Torres (@rolodoom)
 # | |       | |___| |    http://rolandoramostorres.com
 # |_|       |_______|
-#  _         _______     r_git_update
+#  _         _______     
 # | |       |  ___  |
-# | |       | |   | |    Commit with custom message
-# | |_____  | |___| |    "Update" message if no argument provided
+# | |       | |   | |    r_git_update
+# | |_____  | |___| |    Commits changes to Git with the provided commit message, or with a default 'Update' message if none is provided.
 # |_______| |_______|
 # 
 #
 
-#git add -A && git commit -m "Update" && git push
+Help() {
+  cat << EOF
+Usage: $(basename $0) [MESSAGE]
 
+Git commit with optional message, defaults to 'Update'.
+
+OPTIONS:
+  -h     Display this help message
+
+EXAMPLES:
+  $(basename $0) "Any message you want!"
+EOF
+  exit 1
+}
 
 if [ $# -eq 0 ]
     then
-        git add -A
-        git commit -m "Update"
-        git push
-    else
-        FILEDB=$1
-        git add -A
-        git commit -m "$FILEDB"
-        git push
+        Help
+        exit 1
 fi
+
+if [ "$1" == "--help" ] || [ "$1" == "-h" ]
+    then
+        Help
+        exit 0
+fi
+
+if [ $# -eq 1 ]
+    then
+        commit_message="$1"
+    else
+        commit_message="Update"
+fi
+
+git add -A
+git commit -m "$commit_message"
+git push
+

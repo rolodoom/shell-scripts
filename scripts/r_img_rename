@@ -14,26 +14,33 @@
 #
 
 # Define function to display usage information.
-function show_usage {
-  echo "Usage: $0 -i|--imagepath <path> -s|--string <string> [-p|--position <before|after>] [-h|--help]"
-  echo ""
-  echo "Description:"
-  echo "  This script adds a given string to the filenames of all image files"
-  echo "  (i.e., files with the extensions 'jpg', 'jpeg', 'png', 'gif', and 'bmp')"
-  echo "  within a specified folder."
-  echo ""
-  echo "Options:"
-  echo "  -i, --imagepath <path>    The path to the folder containing the image files."
-  echo "  -s, --string <string>     The string to add to the filenames."
-  echo "  -p, --position <before|after>"
-  echo "                            The position at which to add the string. Must be"
-  echo "                            'before' or 'after'. Default is 'before'."
-  echo "  -h, --help                Show usage information."
-  exit 1
+Help() {
+  cat <<-EOF
+Usage: $0 -i PATH -s STRING [-p <prefix|suffix>] [-h]
+
+This script adds a given string to the file names of all image files in a folder.
+Supported image types are: 'jpg', 'jpeg', 'png', 'gif', and 'bmp'
+
+OPTIONS:
+  -h                  Display this help message
+  -i PATH             The path to the folder containing the image files.
+  -s STRING           The string to add to the filenames.
+  -p <prefix|suffix>  The position at which to add the string. Must be 'prefix' or 'suffix'. Default is 'prefix'.
+
+EXAMPLES:
+  $(basename $0) -i . -s new_
+   All image files in the current directory will be prefixed with the string "new_".
+   For example, if there is an image file called image.jpg in the current directory, the script will rename it to new_image.jpg.
+
+  $(basename $0) -i . -p suffix -s _new
+   All image files in the current directory will be suffixed with the string "_new". 
+   For example, if there is an image file called image.jpg in the current directory, the script will rename it to image_new.jpg.
+EOF
 }
 
+
 # Set default values.
-position="before"
+position="prefix"
 
 # Parse command-line arguments.
 while [[ $# -gt 0 ]]; do
@@ -52,18 +59,20 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      show_usage
+      Help
+      exit 1
       ;;
     *)
-      show_usage
+      Help
+      exit 1
       ;;
   esac
 done
 
 # Check if required arguments were passed.
 if [ -z "$imagepath" ] || [ -z "$string" ]; then
-  echo "Error: Missing required argument(s)."
-  show_usage
+  echo -e "Error: Missing required argument(s).\n"
+  Help
 fi
 
 # Loop through all image files in the folder.
@@ -74,13 +83,13 @@ for file in $imagepath/*.{jpg,jpeg,png,gif,bmp}; do
     filename=$(basename "$file")
     extension="${filename##*.}"
 
-    # Add the string before or after the filename, depending on the position.
-    if [ "$position" = "before" ]; then
-      newname="${string}-${filename}"
-    elif [ "$position" = "after" ]; then
-      newname="${filename%.*}-${string}.${extension}"
+    # Add the string prefix or suffix the filename, depending on the position.
+    if [ "$position" = "prefix" ]; then
+      newname="${string}${filename}"
+    elif [ "$position" = "suffix" ]; then
+      newname="${filename%.*}${string}.${extension}"
     else
-      echo "Error: Invalid 'position' argument. Must be 'before' or 'after'."
+      echo "Error: Invalid 'position' argument. Must be 'prefix' or 'suffix'."
       exit 1
     fi
 

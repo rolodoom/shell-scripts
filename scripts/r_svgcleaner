@@ -17,32 +17,61 @@ command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not insta
 command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
 
 # Define a function to display help information
-function display_help {
-    echo "Usage: $(basename "$0") [FILE]"
-    echo "  -h              Display this help message"
-    echo "  FILE            SVG file to process, or '.' to process all SVG files in the current directory"
+Help() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS] [FILE]
+
+SVG batch processing script with svgcleaner, tidy, and inkscape
+
+OPTIONS:
+  -h     Display this help message
+  -p     Generate PNG versions of the processed SVG files
+
+ARGUMENTS:
+  FILE   SVG file to process, or '.' to process all SVG files in the current directory
+
+EXAMPLES:
+  $(basename $0) .
+    Process all SVG files in the current directory.
+
+  $(basename $0) icon.svg
+    Process the 'icon.svg' file in the current directory.
+
+  $(basename $0) -p icon.svg
+    Process the 'icon.svg' file in the current directory and generate a PNG version of the processed file.
+EOF
 }
 
 
+
+
 # Define a function to process an SVG icon
-function process_icon (){
+function process_icon {
     ICON=$1
     #echo "process the icon ${ICON}"
     svgcleaner "$ICON" "$ICON"
     tidy -q -xml -indent -wrap 0 -m "$ICON"
-    inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+    if [ $GENERATE_PNG -eq 1 ]
+    then
+        inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+    fi
 }
 
-# Use getopts to handle the '-h' flag
-while getopts "h" option; do
+GENERATE_PNG=0
+
+# Use getopts to handle the '-h' and '-p' flags
+while getopts "hp" option; do
     case $option in
         h)
-            display_help
+            Help
             exit
             ;;
+        p)
+            GENERATE_PNG=1
+            ;;
         \?)
-            echo "Invalid option: -$OPTARG" >&2
-            display_help
+            echo -e "Invalid option: -$OPTARG\n" >&2
+            Help
             exit 1
             ;;
     esac
@@ -59,8 +88,7 @@ shopt -s nocaseglob # Sets nocaseglob
 # Check if the script is called without arguments
 if [ $# -eq 0 ]
 then
-    echo "No arguments supplied"
-    display_help
+    Help
     exit 1
 else
     file=$1
@@ -81,7 +109,8 @@ else
                 process_icon $file
             else
                 echo "File \"${file}\" doesn't exist or is not a valid SVG file!"
-                display_help
+                echo
+                Help
                 exit 1
             fi
             exit;

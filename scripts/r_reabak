@@ -6,20 +6,46 @@
 # |_|       |_______|
 #  _         _______     r_reabak
 # | |       |  ___  |    
-# | |       | |   | |    REAPER backup files
-# | |_____  | |___| |    Move all backup files to Backup folder
+# | |       | |   | |    r_reabak
+# | |_____  | |___| |    Move all REAPER backup files to Backup folder
 # |_______| |_______|
 #
 #
 #
 
+
+#!/bin/bash
+
+help() {
+  cat << EOF
+Usage: $(basename $0) [-h]
+
+Move all *.rpp-bak files to Backup folder, which will be created if non existent.
+
+OPTIONS:
+  -h     Display this help message
+EOF
+}
+
+# Check if there are any .rpp-bak files in the folder
+shopt -s nullglob # Sets nullglob
+shopt -s nocaseglob # Sets nocaseglob
+files=(*.rpp-bak)
+if [ ${#files[@]} -eq 0 ]; then
+    echo -e "No .rpp-bak files found in folder.\n"
+    help
+    exit 1
+fi
+
+# Create Backup folder if needed
 DIR=$(readlink -f "Backup")
 if [ ! -d "$DIR" ]; then
     mkdir Backup
 fi
 
-shopt -s nullglob # Sets nullglob
-shopt -s nocaseglob # Sets nocaseglob
+# Move all .rpp-bak files to Backup folder
 for f in *.rpp-bak; do
     mv "$f" Backup/
 done
+
+echo "Done!"

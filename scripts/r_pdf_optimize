@@ -13,11 +13,54 @@
 # Requirementes:
 # ->  gs
 
+
+# # Optimize all PDF files on current directory Using eBook settings
+
+# command -v gs >/dev/null 2>&1 || { echo >&2 "I require gs but it's not installed. Aborting."; exit 1; }
+
+# shopt -s nullglob # Sets nullglob
+# shopt -s nocaseglob # Sets nocaseglob
+# for f in *.pdf; do
+#   gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
+#   -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH \
+#   -sOutputFile="${f%.*}-optimized.pdf" "$f"
+# done
+
+
+#!/bin/bash
+
+Help() {
+  cat <<EOF
+Usage: optimize-pdf [OPTION]
+
+Optimizes all PDF files in the current directory using ebook settings.
+
+OPTIONS:
+  -h  Print this help message.
+EOF
+}
+
+# Display Help if -h option is passed
+if [[ $1 == "-h" ]]; then
+  Help
+  exit 0
+fi
+
+# Check if gs is installed
 command -v gs >/dev/null 2>&1 || { echo >&2 "I require gs but it's not installed. Aborting."; exit 1; }
 
+# Check if there are PDF files in the current directory
 shopt -s nullglob # Sets nullglob
 shopt -s nocaseglob # Sets nocaseglob
-for f in *.pdf; do
+pdf_files=(*.pdf)
+if (( ${#pdf_files[@]} == 0 )); then
+  echo -e "No PDF files found in the current directory.\n"
+  Help
+  exit 1
+fi
+
+# Optimize PDF files using ebook settings
+for f in "${pdf_files[@]}"; do
   gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
   -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH \
   -sOutputFile="${f%.*}-optimized.pdf" "$f"

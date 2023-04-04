@@ -28,18 +28,32 @@ destination=""
 folders=()
 
 
-# Define usage function
-function usage {
-  echo "Usage: $(basename $0) -d DESTINATION -f FOLDER1 FOLDER2 ..."
+# Define Help function
+Help() {
+  cat << EOF
+Usage: $(basename $0) -d DESTINATION -f FOLDER1 FOLDER2 ...
+
+Syncs multiple folders to a destination folder using rsync.
+
+OPTIONS:
+  -h                Print this help message.
+  -d DESTINATION    The destination folder.
+  -f FOLDER1 ...    The paths of the folders to copy.
+
+EXAMPLES:
+  $(basename $0) -d /backup -f /home/user /var/log
+    Syncs the /home/user and /var/log folders to the /backup folder.
+EOF
   exit 1
 }
+
 
 # Parse command line options
 while getopts ":d:f:h" opt; do
   case "$opt" in
     d) destination="$OPTARG";;
     f) shift 3; folders+=("$@");;
-    h) usage;;
+    h) Help;;
     :) echo "Option -$OPTARG requires an argument."; exit 1;;
     \?) echo "Invalid option: -$OPTARG"; exit 1;;
   esac
@@ -47,29 +61,23 @@ done
 
 
 
-# If no arguments were passed, display usage and exit
+# If no arguments were passed, display Help and exit
 if [ "$#" -eq 0 ]; then
-  usage
-  exit 1
-fi
-
-# Check that destination is provided
-if [ -z "${destination+x}" ]; then
-  echo "Error: destination path is required."
-  usage
+  Help
   exit 1
 fi
 
 # Check that destination is a valid path
 if [ ! -d "$destination" ]; then
-  echo "Error: $destination is not a valid directory."
+  echo -e "Error: $destination is not a valid directory.\n"
+  Help
   exit 1
 fi
 
 # If folders array is empty, exit with error message
 if [ ${#folders[@]} -eq 0 ]; then
-  echo "Error: no folders to sync specified."
-  usage
+  echo -e "Error: no folders to sync specified.\n"
+  Help
   exit 1
 fi
 
@@ -90,13 +98,13 @@ for ((i=0; i<${#folders[@]}; i++)); do
     echo "Warning: ${folder_name} already exists in ${destination}."
     read -p "Do you want to replace the existing folder? (y/n): " choice
     case "$choice" in 
-      y|Y ) echo "Replacing ${folder_name} in ${destination}..."; sudo -S rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after;;
+      y|Y ) echo "Replacing ${folder_name} in ${destination}..."; rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after;;
       n|N ) echo "Skipping ${folder_name} in ${destination}...";;
       * ) echo "Invalid choice. Skipping ${folder_name} in ${destination}...";;
     esac
   else
     echo "Copying ${folder} to ${destination}/${folder_name}..."
-    sudo -S rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after
+    rsync -aAX --info=progress2 "${folder}/" "${destination}/${folder_name}/" --delete-after
   fi
 done
 

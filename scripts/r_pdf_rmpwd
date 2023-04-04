@@ -23,26 +23,28 @@ if ! command -v pdftk &> /dev/null; then
   exit 1
 fi
 
-# Define usage function
-usage() {
-  echo "Usage: $0 [-h] [-p|--password <PASSWORD>] [-f|--folder <FOLDER_PATH>]"
-  echo "Remove password from all PDF files in a folder."
-  echo
-  echo "OPTIONS:"
-  echo "  -h, --help                 Show this help message and exit."
-  echo "  -p, --password <PASSWORD>"
-  echo "                             Specify the password to use for all PDF files."
-  echo "                             If not provided, the script will prompt for it."
-  echo "  -f, --folder <FOLDER_PATH>"
-  echo "                             Specify the folder path where the PDF files are located."
-  echo "                             If not provided, the current working directory will be used."
+# Define Help function
+Help() {
+  cat <<EOF
+Usage: $0 [-h] [-p PASSWORD] [-f FOLDER_PATH]
+
+Remove password from all PDF files in a folder.
+
+OPTIONS:
+  -h                 Show this help message and exit.
+  -p PASSWORD        Specify the password to use for all PDF files.
+                     If not provided, the script will prompt for it.
+  -f FOLDER_PATH     Specify the folder path where the PDF files are located.
+                     If not provided, the current working directory will be used.
+EOF
 }
+
 
 # Parse command line options
 while [[ $# -gt 0 ]]; do
   case $1 in
     -h|--help)
-      usage
+      Help
       exit 0
       ;;
     -p|--password)
@@ -60,11 +62,25 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+
+# check if folder contains any PDF files
+if [ ! "$(find "$folder_path" -maxdepth 1 -type f -name '*.pdf' -print -quit)" ]; then
+  echo -e "No PDF files found in $folder_path\n"
+  Help
+  exit 1
+fi
+
+
 # Prompt for password if not provided
 if [[ -z "$password" ]]; then
   read -sp "Enter the password for the PDF files: " password
   echo
+  if [[ -z "$password" || "$password" == $'\n' ]]; then
+    echo "No password provided. Exiting..."
+    exit 1
+  fi
 fi
+
 
 # Loop through all PDF files in the folder and process each one
 for file_path in "$folder_path"/*.pdf; do
