@@ -65,7 +65,7 @@ UnsetGTK()
 InvalidOption()
 {
    # Display Invalid Option Text
-   echo -e "$COMMAND_NAME: invalid option.\n"
+   echo -e "$(basename $0): invalid option.\n"
    Help
 }
 
