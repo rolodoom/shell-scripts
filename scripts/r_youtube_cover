@@ -1,0 +1,96 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_youtube_cover
+# | |       |  ___  |
+# | |       | |   | |    Download the image cover of given video ID
+# | |_____  | |___| |    
+# |_______| |_______|
+# 
+#
+
+############################################################
+# Help                                                     #
+############################################################
+Help() {
+  cat << EOF
+Usage: $(basename $0) [OPTIONS] [VIDEOID]
+
+Download the image cover of given video ID
+
+OPTIONS:
+  -h     Display this help message
+
+ARGUMENTS:
+  ID   Video ID to download
+
+EXAMPLES:
+  $(basename $0) dQw4w9WgXcQ
+    Download the cover image of https://youtu.be/dQw4w9WgXcQ
+EOF
+  exit 1
+}
+
+
+############################################################
+# SetGTK                                                   #
+############################################################
+GetYoutubeThumbnailURL () {
+  # Construct the URL for the maximum resolution thumbnail using the video ID
+  local url="https://img.youtube.com/vi/$1/maxresdefault.jpg"
+  local filename="cover-$1-$(basename "$url")"
+
+  # Download the file using curl
+  curl -L -o "$filename" "$url"
+}
+
+
+
+############################################################
+# InvalidOption                                            #
+############################################################
+InvalidOption()
+{
+   # Display Invalid Option Text
+   echo -e "$(basename $0): invalid option.\n"
+   Help
+}
+
+############################################################
+# Main Program                                             #
+############################################################
+
+# No option supplied
+# Check if the script is called without arguments
+if [ $# -eq 0 ]
+then
+    Help
+    exit 1
+else
+    VideoID=$1
+    case $VideoID in
+        # Process the VideoID
+        *)
+            GetYoutubeThumbnailURL $VideoID
+            exit;
+            ;;
+    esac
+fi
+
+############################################################
+# Process the input options. Add options as needed.        #
+############################################################
+# Get the options
+while getopts ":h" option; do
+   case $option in
+      h) # display Help
+         Help
+         exit;;
+      \?) # Invalid option
+         InvalidOption
+         exit;;
+   esac
+done
