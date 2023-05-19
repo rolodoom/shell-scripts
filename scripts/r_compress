@@ -1,0 +1,80 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     
+# | |       |  ___  |
+# | |       | |   | |    r_compress
+# | |_____  | |___| |    Syncs multiple folders to a destination folder using rsync.
+# |_______| |_______|
+# 
+#
+
+# Define Help function
+Help() {
+  cat << EOF
+Usage: $(basename $0) [OPTIONS]
+
+Compress every folder in the current path into a separate *.tar.gz file.
+
+OPTIONS:
+  -h        Print this help message.
+  -v        Use verbose mode.
+
+EXAMPLES:
+  $(basename $0)
+    Compress folders in the current directory without verbose output.
+
+  $(basename $0) -v
+    Compress folders in the current directory with verbose output.
+EOF
+  exit 1
+}
+
+
+verbose=0
+
+# Use getopts to handle the '-h' and '-v' flags
+while getopts "hv" option; do
+    case $option in
+        h)
+            Help
+            exit
+            ;;
+        v)
+            verbose=1
+            ;;
+        \?)
+            echo -e "Invalid option: -$OPTARG\n" >&2
+            Help
+            exit 1
+            ;;
+    esac
+done
+
+
+# Remove the processed arguments
+shift $((OPTIND-1))
+
+
+# Get the absolute path of the specified path
+path=$(realpath ".")
+path="."
+
+
+# Loop through all directories in the specified path
+for dir in "$path"/*/; do
+  dir=${dir%/}  # Remove trailing slash from directory name
+
+  # Display information about the folder being compressed
+  echo "Compressing folder: $dir"
+
+  # Compress the directory into a tar.gz file
+  if [ "$verbose" -eq 1 ]; then
+    tar -czvf "${dir}.tar.gz" "$dir"
+  else
+    tar -czf "${dir}.tar.gz" "$dir"
+  fi
+done
