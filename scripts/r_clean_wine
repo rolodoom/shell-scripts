@@ -1,0 +1,24 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     
+# | |       |  ___  |
+# | |       | |   | |    r_clean_wine
+# | |_____  | |___| |    Remove all existing associations for wine
+# |_______| |_______|    
+# 
+
+# Remove all existing associations
+rm -f ~/.local/share/mime/packages/x-wine*
+rm -f ~/.local/share/applications/wine-extension*
+rm -f ~/.local/share/icons/hicolor/*/*/application-x-wine-extension*
+rm -f ~/.local/share/mime/application/x-wine-extension*
+
+# Disable winemenubuilder for all existing registries
+for sysreg in $(find ~/.wine -name system.reg);
+do
+    sed -i 's/winemenubuilder.exe -a/winemenubuilder.exe/' $sysreg
+done
