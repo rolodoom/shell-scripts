@@ -12,8 +12,9 @@
 #
 #
 #
-sudo mkdir shell-scripts/local-bin || return 1
-sudo cp -rf shell-scripts/scripts/* shell-scripts/local-bin || return 1
-sudo chmod -R +x shell-scripts/local-bin/*
-sudo mv shell-scripts/local-bin/* /usr/local/bin || return 1
-sudo rm -r shell-scripts || return 1
+mkdir shell-scripts/local-bin || return 1
+cp -rf shell-scripts/scripts/* shell-scripts/local-bin || return 1
+chmod -R +x shell-scripts/local-bin/*
+mkdir -p $USER/.bin
+mv shell-scripts/local-bin/* $USER/.bin || return 1
+rm -r shell-scripts || return 1
