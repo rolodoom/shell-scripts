@@ -17,4 +17,4 @@ mkdir -p $HOME/.bin
 cp -rf shell-scripts/scripts/* shell-scripts/local-bin || return 1
 chmod -R +x shell-scripts/local-bin/*
 mv shell-scripts/local-bin/* $HOME/.bin || return 1
-rm -r shell-scripts || return 1
+rm -rf shell-scripts || return 1
