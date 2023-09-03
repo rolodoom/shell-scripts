@@ -38,9 +38,12 @@ SetGTK()
    # Set GTK Theme
    for dir in $HOME/.var/app/*/
    do
-      confdir="${dir}config/gtk-3.0"
-      mkdir -p $confdir
-      cp $HOME/.config/gtk-3.0/settings.ini $confdir/settings.ini
+      for i in $(seq 3 4);
+      do
+         confdir="${dir}config/gtk-${i}.0"
+         mkdir -p $confdir
+         cp $HOME/.config/gtk-$i.0/settings.ini $confdir/settings.ini
+      done
    done
    echo -e "\nsetting gtk theme... done!\n"
 }
@@ -53,8 +56,11 @@ UnsetGTK()
    # Unset GTK Theme
    for dir in $HOME/.var/app/*/
    do
-      confdir="${dir}config/gtk-3.0"
-      rm -rf $confdir/settings.ini
+      for i in $(seq 3 4);
+      do
+         confdir="${dir}config/gtk-${i}.0"
+         rm -rf $confdir/settings.ini
+      done
    done
    echo -e "\nunsetting gtk theme... done!\n"
 }
