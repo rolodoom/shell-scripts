@@ -17,17 +17,17 @@ git clone https://github.com/rolodoom/shell-scripts.git
 chmod +x shell-scripts/install.sh && ./shell-scripts/install.sh
 ```
 
-Don't forget to add `$HOME/.bin` to your PATH on `~/.bashrc` or `~/.zshrc`
+Don't forget to add `$HOME/.local/bin` to your PATH on `~/.bashrc` or `~/.zshrc`
 
 ```
-export PATH="$HOME/.bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 **NOTE:** install.sh will delete the donwloaded shell-scripts folder.
 
 ### Basic usage
 
-I usually store this scripts in `$HOME/.bin` and use 'r\_' as preffix so I don't get confuse with system commands:
+I usually store this scripts in `$HOME/.local/bin` and use 'r\_' as preffix so I don't get confuse with system commands:
 
 ```
 r_command
