@@ -13,8 +13,8 @@
 #
 #
 mkdir shell-scripts/local-bin || return 1
-mkdir -p $HOME/.bin
+mkdir -p $HOME/.local/bin
 cp -rf shell-scripts/scripts/* shell-scripts/local-bin || return 1
 chmod -R +x shell-scripts/local-bin/*
-mv shell-scripts/local-bin/* $HOME/.bin || return 1
+mv shell-scripts/local-bin/* $HOME/.local/bin || return 1
 rm -rf shell-scripts || return 1
