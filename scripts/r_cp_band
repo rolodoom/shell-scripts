@@ -1,0 +1,91 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     
+# | |       |  ___  |
+# | |       | |   | |    r_cp_band
+# | |_____  | |___| |    Syncs a Selected Artist ~/Music folder
+# |_______| |_______|    on a server
+# 
+#
+
+#   This script allows you to copy a band folder from a remote server to your 
+#   local machine using rsync. The script takes the server address, band name, 
+#   and optional rsync options as arguments. It supports both the default 
+#   rsync options (-aAX) and allows you to enable verbose mode (-v) by passing 
+#   the -v flag either before or after the server and band name.
+
+# Function to display the usage message
+usage() {
+  echo "Usage: $0 <Server> <Band Name> [options]"
+  echo "  <Server>: The server address (e.g., user@myserver)"
+  echo "  <Band Name>: The band folder name (e.g., \"Band Name\")"
+  echo "Options:"
+  echo "  -h, --help    Show this help message"
+  echo "  -v            Enable verbose mode (rsync option)"
+  exit 1
+}
+
+#!/bin/bash
+
+# Function to display the usage message
+usage() {
+  echo "Usage: $0 <Server> <Band Name> [rsync options]"
+  echo "  <Server>: The server address (e.g., user@myserver)"
+  echo "  <Band Name>: The band folder name (e.g., \"The 69 Eyes\")"
+  echo "Options:"
+  echo "  -h, --help    Show this help message"
+  echo "  -v            Enable verbose mode (passed either before or after the band name)"
+  exit 1
+}
+
+# If -h or --help is passed, show the usage
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+  usage
+fi
+
+# Check if at least server and band name are provided
+if [ -z "$1" ] || [ -z "$2" ]; then
+  usage
+fi
+
+# Initialize variables
+SERVER=""
+BAND_NAME=""
+RSYNC_OPTIONS="-aAX"
+
+# Loop through arguments and capture server, band name, and rsync options
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -v) 
+      RSYNC_OPTIONS="$RSYNC_OPTIONS -v"   # Add verbose mode to rsync options
+      shift
+      ;;
+    -*)
+      usage
+      ;;
+    *)
+      if [ -z "$SERVER" ]; then
+        SERVER="$1"
+      elif [ -z "$BAND_NAME" ]; then
+        BAND_NAME="$1"
+      else
+        usage
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Define the remote path with the band name
+REMOTE_PATH="${SERVER}:~/Music/${BAND_NAME}/"
+
+# Define the local path with $HOME expanding to the correct home directory
+LOCAL_PATH="${HOME}/Music/${BAND_NAME}/"
+
+# Use rsync with the appropriate options
+rsync $RSYNC_OPTIONS --info=progress2 --delete-after "$REMOTE_PATH" "$LOCAL_PATH"
+
