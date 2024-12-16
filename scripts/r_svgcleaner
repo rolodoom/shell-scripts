@@ -4,7 +4,7 @@
 # | |       | |   | |    Rolando Ramos Torres (@rolodoom)
 # | |       | |___| |    http://rolandoramostorres.com
 # |_|       |_______|
-#  _         _______     
+#  _         _______
 # | |       |  ___  |
 # | |       | |   | |    r_svgcleaner
 # | |_____  | |___| |    SVG batch processing script with svgcleaner, tidy, and inkscape
@@ -14,7 +14,8 @@
 # Check if required commands are available
 command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
 command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
-command -v inkscape >/dev/null 2>&1 || { echo >&2 "I require inkscape but it's not installed. Aborting."; exit 1; }
+command -v flatpak >/dev/null 2>&1 || { echo >&2 "I require flatpak but it's not installed. Aborting."; exit 1; }
+flatpak list --app | grep -q 'org.inkscape.Inkscape' || { echo >&2 "I require Flatpak Inkscape but it's not installed. Aborting."; exit 1; }
 
 # Define a function to display help information
 Help() {
@@ -53,7 +54,7 @@ function process_icon {
     tidy -q -xml -indent -wrap 0 -m "$ICON"
     if [ $GENERATE_PNG -eq 1 ]
     then
-        inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+        flatpak run org.inkscape.Inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
     fi
 }
 
