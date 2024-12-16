@@ -18,44 +18,41 @@
 #   rsync options (-aAX) and allows you to enable verbose mode (-v) by passing 
 #   the -v flag either before or after the server and band name.
 
-# Function to display the usage message
-usage() {
-  echo "Usage: $0 <Server> <Band Name> [options]"
-  echo "  <Server>: The server address (e.g., user@myserver)"
-  echo "  <Band Name>: The band folder name (e.g., \"Band Name\")"
-  echo "Options:"
-  echo "  -h, --help    Show this help message"
-  echo "  -v            Enable verbose mode (rsync option)"
-  exit 1
-}
+# Define a function to display help information
+Help() {
+    cat << EOF
+Usage: $(basename "$0") <Server> <Band Name> [rsync options]
 
-#!/bin/bash
+Script to get a band folder from a remote server using rsync
 
-# Function to display the usage message
-usage() {
-  echo "Usage: $0 <Server> <Band Name> [rsync options]"
-  echo "  <Server>: The server address (e.g., user@myserver)"
-  echo "  <Band Name>: The band folder name (e.g., \"The 69 Eyes\")"
-  echo "Options:"
-  echo "  -h, --help    Show this help message"
-  echo "  -v            Enable verbose mode (passed either before or after the band name)"
-  exit 1
+OPTIONS:
+  -h, --help      Show this help message
+  -v              Enable verbose mode (passed either before or after the band name)
+  --info=progress2 Show progress information during file transfer
+
+ARGUMENTS:
+  <Server>: The server address (e.g., user@myserver)
+  <Band Name>: The band folder name (e.g., "The 69 Eyes")
+
+EXAMPLES:
+  $(basename $0) user@myserver.com "The 69 Eyes"
+    Gets the folder "The 69 Eyes" from ~/Music on user@myserver.com using rsync.
+
+  $(basename $0) -v user@myserver.com "The 69 Eyes"
+    Same as above but passed verbose argument to rsync.
+EOF
 }
 
 # If -h or --help is passed, show the usage
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-  usage
-fi
-
-# Check if at least server and band name are provided
-if [ -z "$1" ] || [ -z "$2" ]; then
-  usage
+  Help
+  exit 0
 fi
 
 # Initialize variables
 SERVER=""
 BAND_NAME=""
-RSYNC_OPTIONS="-aAX"
+RSYNC_OPTIONS="-aAX"  # Default rsync options
 
 # Loop through arguments and capture server, band name, and rsync options
 while [[ "$#" -gt 0 ]]; do
@@ -64,8 +61,13 @@ while [[ "$#" -gt 0 ]]; do
       RSYNC_OPTIONS="$RSYNC_OPTIONS -v"   # Add verbose mode to rsync options
       shift
       ;;
+    --info=progress2)
+      RSYNC_OPTIONS="$RSYNC_OPTIONS --info=progress2" # Enable progress info
+      shift
+      ;;
     -*)
-      usage
+      Help
+      exit 1
       ;;
     *)
       if [ -z "$SERVER" ]; then
@@ -73,12 +75,20 @@ while [[ "$#" -gt 0 ]]; do
       elif [ -z "$BAND_NAME" ]; then
         BAND_NAME="$1"
       else
-        usage
+        Help
+        exit 1
       fi
       shift
       ;;
   esac
 done
+
+# Ensure the server and band name are provided
+if [ -z "$SERVER" ] || [ -z "$BAND_NAME" ]; then
+  echo "Error: Server and Band Name are required."
+  Help
+  exit 1
+fi
 
 # Define the remote path with the band name
 REMOTE_PATH="${SERVER}:~/Music/${BAND_NAME}/"
@@ -87,5 +97,13 @@ REMOTE_PATH="${SERVER}:~/Music/${BAND_NAME}/"
 LOCAL_PATH="${HOME}/Music/${BAND_NAME}/"
 
 # Use rsync with the appropriate options
-rsync $RSYNC_OPTIONS --info=progress2 --delete-after "$REMOTE_PATH" "$LOCAL_PATH"
+rsync $RSYNC_OPTIONS --delete-after "$REMOTE_PATH" "$LOCAL_PATH"
 
+# Check for rsync success
+if [[ $? -eq 0 ]]; then
+  echo "Successfully synced ${BAND_NAME} from ${SERVER}."
+  exit 0
+else
+  echo "Error: rsync failed."
+  exit 1
+fi
