@@ -12,10 +12,23 @@
 #
 
 # Check if required commands are available
-command -v svgcleaner >/dev/null 2>&1 || { echo >&2 "I require svgcleaner but it's not installed. Aborting."; exit 1; }
-command -v tidy >/dev/null 2>&1 || { echo >&2 "I require tidy but it's not installed. Aborting."; exit 1; }
-command -v flatpak >/dev/null 2>&1 || { echo >&2 "I require flatpak but it's not installed. Aborting."; exit 1; }
-flatpak list --app | grep -q 'org.inkscape.Inkscape' || { echo >&2 "I require Flatpak Inkscape but it's not installed. Aborting."; exit 1; }
+check_command() {
+    command -v "$1" >/dev/null 2>&1 || { echo >&2 "I require $1 but it's not installed. Aborting."; exit 1; }
+}
+
+# Check for required commands
+check_command "svgcleaner"
+check_command "tidy"
+
+# Check for system-installed Inkscape first
+if command -v inkscape >/dev/null 2>&1; then
+    INKSCAPE_CMD="inkscape"
+elif command -v flatpak >/dev/null 2>&1 && flatpak list --app | grep -q 'org.inkscape.Inkscape'; then
+    INKSCAPE_CMD="flatpak run org.inkscape.Inkscape"
+else
+    echo >&2 "I require Inkscape (either system-installed or Flatpak) but it's not installed. Aborting."
+    exit 1
+fi
 
 # Define a function to display help information
 Help() {
@@ -43,18 +56,13 @@ EXAMPLES:
 EOF
 }
 
-
-
-
 # Define a function to process an SVG icon
-function process_icon {
-    ICON=$1
-    #echo "process the icon ${ICON}"
+process_icon() {
+    ICON="$1"
     svgcleaner "$ICON" "$ICON"
     tidy -q -xml -indent -wrap 0 -m "$ICON"
-    if [ $GENERATE_PNG -eq 1 ]
-    then
-        flatpak run org.inkscape.Inkscape --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+    if [ $GENERATE_PNG -eq 1 ]; then
+        $INKSCAPE_CMD --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
     fi
 }
 
@@ -81,40 +89,28 @@ done
 # Remove the processed arguments
 shift $((OPTIND-1))
 
-
-# Set nocaseglob to make file matching case-insensitive
-shopt -s nocaseglob # Sets nocaseglob
-
-
 # Check if the script is called without arguments
-if [ $# -eq 0 ]
-then
+if [ $# -eq 0 ]; then
     Help
     exit 1
+fi
+
+# Process the input file or directory
+file="$1"
+
+if [ "$file" == "." ]; then
+    # Process all SVG files in the current directory
+    for icon in *.svg; do
+        process_icon "$icon"
+    done
 else
-    file=$1
-    case $file in
-        # Process all SVG files in the current directory
-        .)
-            for icon in *.svg
-            do
-                process_icon $icon
-            done
-            exit;
-            ;;
-        # Process one specific SVG file
-        *)
-            # Check if the file exists and is a valid SVG file
-            if [ -f $file ] && [ "${file: -4}" == ".svg" ]; then
-                # Process the SVG file
-                process_icon $file
-            else
-                echo "File \"${file}\" doesn't exist or is not a valid SVG file!"
-                echo
-                Help
-                exit 1
-            fi
-            exit;
-            ;;
-    esac
+    # Process a single SVG file
+    if [ -f "$file" ] && [[ "$file" == *.svg ]]; then
+        process_icon "$file"
+    else
+        echo "File \"${file}\" doesn't exist or is not a valid SVG file!"
+        echo
+        Help
+        exit 1
+    fi
 fi
