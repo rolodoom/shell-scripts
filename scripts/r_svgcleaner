@@ -22,11 +22,13 @@ check_command "tidy"
 
 # Check for system-installed Inkscape first
 if command -v inkscape >/dev/null 2>&1; then
-    INKSCAPE_CMD="inkscape"
+    SVG_TO_PNG_CMD="inkscape"
 elif command -v flatpak >/dev/null 2>&1 && flatpak list --app | grep -q 'org.inkscape.Inkscape'; then
-    INKSCAPE_CMD="flatpak run org.inkscape.Inkscape"
+    SVG_TO_PNG_CMD="flatpak run org.inkscape.Inkscape"
+elif command -v resvg >/dev/null 2>&1; then
+    SVG_TO_PNG_CMD="resvg"
 else
-    echo >&2 "I require Inkscape (either system-installed or Flatpak) but it's not installed. Aborting."
+    echo >&2 "I require Inkscape (system-installed or Flatpak) or resvg to convert SVG to PNG, but neither is installed. Aborting."
     exit 1
 fi
 
@@ -62,7 +64,13 @@ process_icon() {
     svgcleaner "$ICON" "$ICON"
     tidy -q -xml -indent -wrap 0 -m "$ICON"
     if [ $GENERATE_PNG -eq 1 ]; then
-        $INKSCAPE_CMD --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+        if [ "$SVG_TO_PNG_CMD" = "resvg" ]; then
+            # Resvg command (simpler syntax)
+            $SVG_TO_PNG_CMD "$ICON" "${ICON%.*}.png"
+        else
+            # Inkscape command (either system or Flatpak version)
+            $SVG_TO_PNG_CMD --export-filename "${ICON%.*}.png" --export-area-page "$ICON"
+        fi
     fi
 }
 
