@@ -1,0 +1,54 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    lsq
+# | |_____  | |___| |    List QCOW2 images with real and virtual sizes
+# |_______| |_______|
+#
+#
+
+script_name=$(basename "$0")
+
+# Help
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $script_name [DIRECTORY]..."
+    echo "List QCOW2 images showing real (disk) and virtual (apparent) sizes."
+    echo
+    echo "If no directory is provided, the current directory is used."
+    exit 0
+fi
+
+dirs=("${@:-.}")
+
+for DIR in "${dirs[@]}"; do
+    shopt -s nullglob
+    files=("$DIR"/*.qcow2)
+
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "No QCOW2 images found."
+        continue
+    fi
+
+    # Calculate total disk usage
+    total=$(du -ch "${files[@]}" | grep total$ | awk '{print $1}')
+    echo "total $total"
+
+
+    for file in "${files[@]}"; do
+        real=$(du -h "$file" | awk '{print $1}')      # actual disk usage
+        virt=$(ls -lh "$file" | awk '{print $5}')    # apparent size
+
+        # preserve ls spacing, insert real and virtual sizes between group and month
+        ls -lh "$file" | awk -v r="$real" -v v="$virt" '
+        {
+            # Fields: $1 perms, $2 links, $3 owner, $4 group
+            # Insert $real and $virt after $4 (group)
+            printf "%s %s %s %s %3s %3s %s %2s %s\n", $1,$2,$3,$4,r,v,$6,$7,$8" "$9
+        }'
+    done
+done
