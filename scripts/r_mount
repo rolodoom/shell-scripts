@@ -1,0 +1,78 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_mount
+# | |_____  | |___| |    This script allows you to mount an ISO file
+# |_______| |_______|
+#
+#
+
+
+# This script allows you to mount an ISO file
+# automatically detecting its filesystem type
+# (ISO9660 or UDF). It can also unmount
+# whatever is currently mounted at /media/cdrom.
+
+MOUNTPOINT="/media/cdrom"
+
+# Function to display usage
+usage() {
+    echo "Usage:"
+    echo "  $0 -f <iso_file>   Mount an ISO (auto-detect ISO9660 or UDF)"
+    echo "  $0 -u              Unmount whatever is mounted at $MOUNTPOINT"
+    exit 1
+}
+
+# Check if at least one argument is provided
+if [ $# -lt 1 ]; then
+    usage
+fi
+
+# Parse options
+while getopts ":f:u" opt; do
+    case $opt in
+        f)
+            ISO="$OPTARG"
+            if [ ! -f "$ISO" ]; then
+                echo "File $ISO does not exist."
+                exit 1
+            fi
+
+            # Detect filesystem type
+            if file "$ISO" | grep -iq "iso 9660"; then
+                TYPE="iso9660"
+            elif file "$ISO" | grep -iq "udf"; then
+                TYPE="udf"
+            else
+                echo "Could not detect filesystem type. Trying ISO 9660 by default..."
+                TYPE="iso9660"
+            fi
+
+            echo "Mounting $ISO as $TYPE on $MOUNTPOINT..."
+            sudo mount -t "$TYPE" "$ISO" -o loop,unhide "$MOUNTPOINT"
+
+            if [ $? -eq 0 ]; then
+                echo "ISO mounted successfully."
+            else
+                echo "Failed to mount the ISO."
+            fi
+            ;;
+        u)
+            echo "Unmounting $MOUNTPOINT..."
+            sudo umount "$MOUNTPOINT"
+            if [ $? -eq 0 ]; then
+                echo "Unmounted successfully."
+            else
+                echo "Failed to unmount."
+            fi
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
