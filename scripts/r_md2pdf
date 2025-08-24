@@ -1,0 +1,177 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_md2pdf
+# | |_____  | |___| |    Markdown to PDF with Pandoc + LaTeX
+# |_______| |_______|
+#
+
+# ------------------------------
+# Markdown to PDF Script
+# ------------------------------
+#
+# Behavior:
+#   1. Single Markdown file:
+#        - PDF is generated in the same folder as the file by default
+#        - If -o is specified, PDF goes to that directory
+#
+#   2. Folder conversion (non-recursive):
+#        - PDFs go to -o if specified, otherwise each PDF goes to the same folder as its .md
+#
+#   3. Folder conversion (recursive, -R):
+#        - PDFs are always generated in the same folder as each Markdown file
+#        - **Warning:** The -o option is ignored in recursive mode
+#
+#
+# Usage:
+#   ./script.sh <file.md|folder> [options]
+#
+# Options:
+#   -h, --help      Show this help message and exit
+#   -o DIR          Output directory for PDFs (default: same folder as input)
+#   -R, --recursive Process folders recursively
+#
+#
+# Examples:
+#   Convert a single file to PDF in the same folder:
+#       ./script.sh example.md
+#
+#   Convert a folder to PDFs, putting all output in ./pdfs:
+#       ./script.sh ./markdown-folder -o ./pdfs
+#
+#   Convert a folder and all subfolders recursively, PDFs stay next to each .md:
+#       ./script.sh ./markdown-folder -R
+# ------------------------------
+
+# Show help
+function show_help() {
+    echo "Usage: $0 <file.md|folder> [options]"
+    echo
+    echo "Options:"
+    echo "  -h, --help      Show this help message and exit"
+    echo "  -o DIR          Output directory for PDFs (default: same folder as input)"
+    echo "  -R, --recursive Process folders recursively (PDFs stay in same folder as Markdown)"
+    echo
+    echo "Examples:"
+    echo "  $0 example.md"
+    echo "  $0 ./markdown-folder -o ./pdfs"
+    echo "  $0  -R ./markdown-folder"
+}
+
+# Convert a single Markdown file to PDF
+function convert_file() {
+    local input_file="$1"
+    local output_dir="$2"
+
+    mkdir -p "$output_dir"
+
+    local base_name
+    base_name=$(basename "$input_file" .md)
+    local output_file="$output_dir/$base_name.pdf"
+
+    pandoc "$input_file" -o "$output_file" \
+        --pdf-engine=xelatex \
+        --from markdown+emoji \
+        -V mainfont="Liberation Serif" \
+        -V monofont="Fira Code" \
+        -V papersize=letter \
+        -V geometry:margin=1.5cm \
+        2>/dev/null
+
+    echo "Converted: $input_file -> $output_file"
+}
+
+# Convert all Markdown files in a folder (non-recursive)
+function convert_folder() {
+    local folder="$1"
+    local output_dir="$2"
+
+    shopt -s nullglob
+    for file in "$folder"/*.md; do
+        convert_file "$file" "$output_dir"
+    done
+}
+
+# Convert all Markdown files in a folder recursively (PDFs go to same folder as each .md)
+function convert_folder_recursive() {
+    local folder="$1"
+
+    find "$folder" -type f -name "*.md" | while IFS= read -r file; do
+        local file_dir
+        file_dir=$(dirname "$file")  # PDF will go here
+        convert_file "$file" "$file_dir"
+    done
+}
+
+# ------------------------------
+# Main subroutine
+# ------------------------------
+function main() {
+    local output_dir=""
+    local recursive=0
+
+    # Check arguments
+    if [[ $# -lt 1 ]]; then
+        show_help
+        exit 1
+    fi
+
+    # Parse options
+    local positional=()
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -o)
+                output_dir="$2"
+                shift 2
+                ;;
+            -R|--recursive)
+                recursive=1
+                shift
+                ;;
+            -*)
+                echo "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+            *)
+                positional+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # Restore positional parameters
+    set -- "${positional[@]}"
+    local input_path="$1"
+
+    # Set default output directory if not provided
+    if [[ -z "$output_dir" && ! -d "$input_path" ]]; then
+        output_dir=$(dirname "$input_path")
+    fi
+
+    # Dispatch
+    if [[ -f "$input_path" ]]; then
+        convert_file "$input_path" "${output_dir:-$(dirname "$input_path")}"
+    elif [[ -d "$input_path" ]]; then
+        if [[ $recursive -eq 1 ]]; then
+            convert_folder_recursive "$input_path"
+        else
+            convert_folder "$input_path" "${output_dir:-$input_path}"
+        fi
+    else
+        echo "Error: $input_path is not a valid file or folder"
+        exit 1
+    fi
+}
+
+# Call main with all script arguments
+main "$@"
