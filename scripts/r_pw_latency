@@ -24,8 +24,8 @@ def update_conf_file(conf_file_path, latency_rate):
     latency_values = ["16", "32", "64", "128", "256", "512", "1024", "2048", "4096"]
     rate_values = ["44100", "48000", "96000"]
 
+    # Validar entrada o usar valores por defecto
     if not latency_rate:
-        # Use default values if input is empty
         latency = DEFAULT_LATENCY
         rate = DEFAULT_RATE
         print(f"No input provided! {DEFAULT_LATENCY} {DEFAULT_RATE} are used.")
@@ -38,50 +38,56 @@ def update_conf_file(conf_file_path, latency_rate):
             rate = DEFAULT_RATE
             print(f"No rate value provided! {DEFAULT_RATE} is used.")
 
-        # Validate if input values are within the allowed range, otherwise use defaults
         if latency not in latency_values or rate not in rate_values:
             latency = DEFAULT_LATENCY
             rate = DEFAULT_RATE
             print(f"Invalid input! {DEFAULT_LATENCY} {DEFAULT_RATE} are used.")
 
     try:
-        # Read the content of the conf file
         with open(conf_file_path, "r") as f:
             lines = f.readlines()
 
-        # Update the values of latency and rate
         updated_lines = []
         updated_latency_line = False
+        inside_jack_properties = False
+
         for line in lines:
-            if "node.latency" in line:
+            stripped = line.strip()
+
+            # Detectar inicio del bloque jack.properties
+            if stripped.startswith("jack.properties") and "{" in stripped:
+                inside_jack_properties = True
+            elif inside_jack_properties and "}" in stripped:
+                inside_jack_properties = False
+
+            # Solo modificar node.latency si estamos dentro del bloque
+            if inside_jack_properties and "node.latency" in stripped:
                 if "#" in line:
-                    # Uncomment the line
                     line = line.replace("#", "")
-                # Update the values of latency and rate
                 line = f"     node.latency       = {latency}/{rate}\n"
                 updated_latency_line = True
+
             updated_lines.append(line)
 
-        # If node.latency line is not found, add it with new values
-        if not updated_latency_line:
-            updated_lines.append(f"     node.latency       = {latency}/{rate}\n")
+        # Solo escribir si se modificó node.latency dentro del bloque
+        if updated_latency_line:
+            with open(conf_file_path, "w") as f:
+                f.writelines(updated_lines)
+            print(f"Configuration file updated successfully!")
+        else:
+            print(
+                f"Warning: 'node.latency' not found inside 'jack.properties' in '{conf_file_path}'. No changes were made."
+            )
 
-        # Write the updated content back to the conf file
-        with open(conf_file_path, "w") as f:
-            f.writelines(updated_lines)
-
-        # print(f"'{conf_file_path}' updated successfully!")
-        print(f"Configuration file updated successfully!")
     except FileNotFoundError:
         print(f"Error: Configuration file '{conf_file_path}' not found!")
 
 
 if __name__ == "__main__":
-    print(f"")
+    print("")
     latency_rate = input("Enter the values separated by space (e.g., 256 48000): ")
 
-    # Get the configuration file path
     conf_file_path = CONF_FILE_STRING.replace("$HOME", os.path.expanduser("~"))
 
     update_conf_file(conf_file_path, latency_rate)
-    print(f"")
+    print("")
