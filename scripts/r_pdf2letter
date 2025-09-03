@@ -1,0 +1,81 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |
+# | |_____  | |___| |    r_pdf2letter
+# |_______| |_______|    Convert the given PDF to US Letter size.
+#
+#
+#
+
+# Check if pdftk command is available
+if ! command -v gs &> /dev/null; then
+  echo "gs is not available. Please install it first."
+  exit 1
+fi
+
+
+# Define Help function
+help() {
+    cat <<EOF
+Usage: $(basename "$0") file.pdf
+
+Convert the given PDF to US Letter size (216x279 mm).
+The output file will have the same name as the input
+with the suffix "_letter.pdf".
+
+Options:
+  -h, --help    Show this help message
+
+Example:
+  $(basename "$0") document.pdf
+  -> generates document_letter.pdf
+EOF
+}
+
+convert() {
+    local input="$1"
+    local base="${input%.pdf}"
+    local output="${base}_letter.pdf"
+
+    if ! gs -o "$output" -sDEVICE=pdfwrite -sPAPERSIZE=letter -dFIXEDMEDIA "$input"; then
+        echo "Error: Ghostscript failed while processing '$input'." >&2
+        exit 1
+    fi
+
+    echo "Generated: $output"
+}
+
+main() {
+    if [[ $# -ne 1 ]]; then
+        help
+        exit 1
+    fi
+
+    case "$1" in
+        -h|--help)
+            help
+            exit 0
+            ;;
+        -*)
+            help
+            exit 1
+            ;;
+    esac
+
+    local file="$1"
+
+    if [[ ! -f "$file" ]]; then
+        help
+        exit 1
+    fi
+
+    convert "$file"
+}
+
+main "$@"
