@@ -14,8 +14,8 @@
 #
 
 # Check if pdftk command is available
-if ! command -v gs &> /dev/null; then
-  echo "gs is not available. Please install it first."
+if ! command -v pdfcrop &> /dev/null; then
+  echo "pdfcrop is not available. Please install it first."
   exit 1
 fi
 
@@ -43,8 +43,15 @@ convert() {
     local base="${input%.pdf}"
     local output="${base}_letter.pdf"
 
-    if ! gs -o "$output" -sDEVICE=pdfwrite -sPAPERSIZE=letter -dFIXEDMEDIA "$input"; then
-        echo "Error: Ghostscript failed while processing '$input'." >&2
+    # Get current PDF height
+    ORIGINAL_HEIGHT=$(pdfinfo "$input" | grep "Page size" | awk '{print $5}')
+    
+    # Calculate how much to crop (792 is letter height)
+    CROP_AMOUNT=$(echo "$ORIGINAL_HEIGHT - 792" | bc)
+    
+    # Crop ONLY from bottom
+    if ! pdfcrop --margins "0 0 0 -$CROP_AMOUNT" "$input" "$output"; then
+        echo "Error: pdfcrop failed while processing '$input'." >&2
         exit 1
     fi
 
