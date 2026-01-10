@@ -1,0 +1,66 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |
+# | |_____  | |___| |    r_vid2mp4
+# |_______| |_______|    AVI/MOV to MP4 Converter (Current Folder Only)
+#
+#
+#
+
+# Function to display help (stdout)
+help() {
+    cat << EOF
+Usage: $(basename $0) [options]
+
+Converts all AVI and MOV files in the current folder to MP4 (non-recursive).
+
+Options:
+  -h        Show this help message and exit
+
+Example:
+  $(basename $0)        Convert all AVI/MOV files in the current folder
+EOF
+}
+
+# Main function
+main() {
+    # Check for -h flag
+    if [[ "$1" == "-h" ]]; then
+        help
+        exit 0
+    fi
+
+    # Enable case-insensitive globbing
+    shopt -s nocaseglob
+
+    # Find AVI and MOV files in the current folder only (non-recursive)
+    mapfile -d '' files < <(find . -maxdepth 1 -type f \( -iname "*.avi" -o -iname "*.mov" \) -print0)
+
+    # Check if there are any files
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "No AVI or MOV files found for conversion in this folder." >&2
+        echo "" >&2
+        help >&2
+        exit 1
+    fi
+
+    # Process each file
+    for file in "${files[@]}"; do
+        output="${file%.*}.mp4"
+        echo "Converting: $file → $output"
+
+        # Convert using FFmpeg safely
+        ffmpeg -nostdin -fflags +genpts -i "$file" -map 0:v -map 0:a? -c:v libx264 -c:a aac "$output"
+
+        echo "Finished: $file"
+    done
+}
+
+# Call main function with all script arguments
+main "$@"
