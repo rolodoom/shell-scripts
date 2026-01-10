@@ -7,7 +7,7 @@
 #  _         _______     
 # | |       |  ___  |
 # | |       | |   | |    r_compress
-# | |_____  | |___| |    Syncs multiple folders to a destination folder using rsync.
+# | |_____  | |___| |    Compress every folder in the current path into a separate *.tar.gz file.
 # |_______| |_______|
 # 
 #
