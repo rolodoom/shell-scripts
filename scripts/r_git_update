@@ -7,46 +7,110 @@
 #  _         _______     
 # | |       |  ___  |
 # | |       | |   | |    r_git_update
-# | |_____  | |___| |    Commits changes to Git with the provided commit message, or with a default 'Update' message if none is provided.
-# |_______| |_______|
+# | |_____  | |___| |    Enhanced git_update script to handle local commits and 
+# |_______| |_______|    amend last pushed commit safely
 # 
 #
 
-Help() {
-  cat << EOF
-Usage: $(basename $0) [MESSAGE]
+# ----------------------------------------
+# Display usage/help message
+# ----------------------------------------
+show_help() {
+    cat << EOF
+Usage: $(basename $0) [OPTIONS] MESSAGE
 
-Git commit with optional message, defaults to 'Update'.
+Git commit with required message, with options to commit normally or recreate last commit.
 
 OPTIONS:
-  -h     Display this help message
+  -h, --help      Display this help message
+  -r, --recommit  Undo last commit and commit again with new message
 
 EXAMPLES:
-  $(basename $0) "Any message you want!"
+  $(basename $0) "Commit new changes"
+  $(basename $0) -r "Fix last commit message"
 EOF
-  exit 1
+    exit 0
 }
 
-if [ $# -eq 0 ]
-    then
-        Help
-        exit 1
-fi
+# ----------------------------------------
+# Display an error message and exit
+# ----------------------------------------
+error_exit() {
+    echo "Error: $1"
+    exit 1
+}
 
-if [ "$1" == "--help" ] || [ "$1" == "-h" ]
-    then
-        Help
-        exit 0
-fi
-
-if [ $# -eq 1 ]
-    then
-        commit_message="$1"
+# ----------------------------------------
+# Commit all changes; push only if a remote exists
+# ----------------------------------------
+commit_new() {
+    local message="$1"
+    git add -A
+    git commit -m "$message"
+    
+    # Check if any remote exists
+    if git remote | grep -q .; then
+        git push
+        echo "Changes committed and pushed to remote."
     else
-        commit_message="Update"
-fi
+        echo "Changes committed locally (no remote detected)."
+    fi
+}
 
-git add -A
-git commit -m "$commit_message"
-git push
+# ----------------------------------------
+# Recreate the last commit with a new message
+# (undo last commit locally, create new commit, push with --force)
+# ----------------------------------------
+recommit_last() {
+    local message="$1"
+    git reset --soft HEAD~1
+    git commit -m "$message"
+    git push --force
+    echo "Last commit recreated with new message and pushed."
+}
 
+# ----------------------------------------
+# Main function to parse arguments and execute actions
+# ----------------------------------------
+main() {
+    local recommit=0
+
+    # Show help if no arguments are provided
+    if [ $# -eq 0 ]; then
+        show_help
+    fi
+
+    # Parse options/flags
+    while [[ "$1" == -* ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                ;;
+            -r|--recommit)
+                recommit=1
+                shift
+                ;;
+            *)
+                error_exit "Unknown option: $1"
+                ;;
+        esac
+    done
+
+    # The remaining argument must be the commit message
+    local message="$1"
+    if [ -z "$message" ]; then
+        error_exit "Commit message is required!"
+    fi
+
+    # Execute the correct action based on the flag
+    if [ $recommit -eq 1 ]; then
+        recommit_last "$message"
+    else
+        commit_new "$message"
+    fi
+}
+
+# ----------------------------------------
+# Run main function with all passed arguments
+# ----------------------------------------
+main "$@"
