@@ -1,0 +1,10 @@
+#!/bin/bash
+for pdf in *.pdf; do
+  base="${pdf%.pdf}"
+  output="${base}_compressed.pdf"
+  temp="${base}_temp.pdf"
+
+  convert -density 300 "$pdf" -normalize -contrast -sharpen 0x1.0 "$temp"
+  gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="$output" "$temp"
+  rm "$temp"
+done
