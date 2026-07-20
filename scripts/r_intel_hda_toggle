@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# --- Configuration ---
+SCRIPT_NAME=$(basename "$0")
+
+# --- Function Definitions ---
+
+enable_card() {
+    # Check if already enabled (file doesn't exist OR file is empty)
+    if [ ! -f /etc/modprobe.d/blacklist-intel-audio.conf ] || [ ! -s /etc/modprobe.d/blacklist-intel-audio.conf ]; then
+        echo "Intel HDA audio is already enabled. No action needed."
+        exit 0
+    fi
+    
+    # Empty the file (remove it completely for cleaner state)
+    sudo rm -f /etc/modprobe.d/blacklist-intel-audio.conf
+    
+    # Update initramfs
+    sudo update-initramfs -u
+    
+    echo "Intel HDA audio enabled. Please reboot for changes to take effect."
+    exit 0
+}
+
+disable_card() {
+    # Check if already disabled (file exists and contains the blacklist line)
+    if [ -f /etc/modprobe.d/blacklist-intel-audio.conf ] && grep -q "blacklist snd_hda_intel" /etc/modprobe.d/blacklist-intel-audio.conf; then
+        echo "Intel HDA audio is already disabled. No action needed."
+        exit 0
+    fi
+    
+    # Write the blacklist line to the file
+    echo "blacklist snd_hda_intel" | sudo tee /etc/modprobe.d/blacklist-intel-audio.conf > /dev/null
+    
+    # Update initramfs
+    sudo update-initramfs -u
+    
+    echo "Intel HDA audio disabled. Please reboot for changes to take effect."
+    exit 0
+}
+
+# Help function
+show_help() {
+    cat << EOF
+Usage: $SCRIPT_NAME [OPTION]
+
+Toggle Intel HDA audio by blacklisting/unblacklisting the snd_hda_intel module.
+
+Options:
+  -e, --enable      Enable Intel HDA audio (remove blacklist)
+  -d, --disable     Disable Intel HDA audio (add blacklist)
+  -h, --help        Display this help message
+
+Examples:
+  $SCRIPT_NAME -e    # Enable Intel audio
+  $SCRIPT_NAME -d    # Disable Intel audio
+
+EOF
+    exit 0
+}
+
+# --- Main Logic ---
+case "$1" in
+    -e)
+        enable_card
+        ;;
+    -d)
+        disable_card
+        ;;
+    -h)
+        show_help
+        ;;
+    *)
+        show_help
+        exit 1
+        ;;
+esac
