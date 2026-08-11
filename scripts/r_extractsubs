@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+show_help() {
+    echo "Usage: $(basename "$0") <input.mkv>"
+    echo
+    echo "Extract subtitle track 2 from an MKV file, repair ASS formatting,"
+    echo "convert it to SRT, and clean generated HTML subtitle tags."
+    echo
+    echo "Example:"
+    echo "  $(basename "$0") movie.mkv"
+}
+
+if [ $# -lt 1 ]; then
+    show_help
+    exit 1
+fi
+
+MKV_FILE="$1"
+
+if [ ! -f "$MKV_FILE" ]; then
+    echo "Error: file not found: $MKV_FILE"
+    exit 1
+fi
+
+BASE_NAME="${MKV_FILE%.mkv}"
+ASS_FILE="${BASE_NAME}.ass"
+#SRT_FILE="${BASE_NAME}.srt"
+
+echo "Extracting subtitle track 2..."
+mkvextract tracks "$MKV_FILE" "2:$ASS_FILE"
+
+echo "Repairing ASS file..."
+sed -i 's/^Dialogue: ,/Dialogue: 0,/' "$ASS_FILE"
+
+#echo "Converting ASS to SRT..."
+#ffmpeg -y -i "$ASS_FILE" "$SRT_FILE"
+
+#echo "Cleaning HTML subtitle tags..."
+#sed -i -E 's/<[^>]+>//g' "$SRT_FILE"
+
+echo "Done."
+echo "Generated files:"
+echo "  $ASS_FILE"
+#echo "  $SRT_FILE"
