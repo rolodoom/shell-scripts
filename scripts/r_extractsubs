@@ -1,17 +1,71 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______     r_extractsubs
+# | |       |  ___  |
+# | |       | |   | |    Extract subtitles from MKV files
+# | |_____  | |___| |    into ASS formating
+# |_______| |_______|
+# 
+#
 
 set -euo pipefail
 
 show_help() {
-    echo "Usage: $(basename "$0") <input.mkv>"
+    echo "Usage: $(basename "$0") [-i subtitle_track] <input.mkv>"
     echo
-    echo "Extract subtitle track 2 from an MKV file, repair ASS formatting,"
+    echo "Extract a subtitle track from an MKV file, repair ASS formatting,"
     echo "convert it to SRT, and clean generated HTML subtitle tags."
     echo
-    echo "Example:"
+    echo "Options:"
+    echo "  -i NUM    Subtitle track to extract (default: 2)"
+    echo "  -h        Show this help"
+    echo
+    echo "Examples:"
     echo "  $(basename "$0") movie.mkv"
+    echo "  $(basename "$0") -i 4 movie.mkv"
+    echo "  $(basename "$0") -i 7 movie.mkv"
 }
 
+# Default subtitle track
+SUBTITLE_TRACK=2
+CUSTOM_TRACK=false
+
+# Parse options
+while getopts ":i:h" opt; do
+    case "$opt" in
+        i)
+            if [[ ! "$OPTARG" =~ ^[0-9]+$ ]]; then
+                echo "Error: subtitle track must be a number: $OPTARG"
+                exit 1
+            fi
+
+            SUBTITLE_TRACK="$OPTARG"
+            CUSTOM_TRACK=true
+            ;;
+        h)
+            show_help
+            exit 0
+            ;;
+        \?)
+            echo "Error: invalid option: -$OPTARG"
+            show_help
+            exit 1
+            ;;
+        :)
+            echo "Error: option -$OPTARG requires a number."
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+shift $((OPTIND - 1))
+
+# Check input file
 if [ $# -lt 1 ]; then
     show_help
     exit 1
@@ -25,14 +79,21 @@ if [ ! -f "$MKV_FILE" ]; then
 fi
 
 BASE_NAME="${MKV_FILE%.mkv}"
-ASS_FILE="${BASE_NAME}.ass"
-#SRT_FILE="${BASE_NAME}.srt"
 
-echo "Extracting subtitle track 2..."
-mkvextract tracks "$MKV_FILE" "2:$ASS_FILE"
+# If a custom track was specified, prefix the track number
+if [ "$CUSTOM_TRACK" = true ]; then
+    ASS_FILE="${SUBTITLE_TRACK}-${BASE_NAME}.ass"
+else
+    ASS_FILE="${BASE_NAME}.ass"
+fi
+
+echo "Extracting subtitle track $SUBTITLE_TRACK..."
+mkvextract tracks "$MKV_FILE" "$SUBTITLE_TRACK:$ASS_FILE"
 
 echo "Repairing ASS file..."
 sed -i 's/^Dialogue: ,/Dialogue: 0,/' "$ASS_FILE"
+
+#SRT_FILE="${BASE_NAME}.srt"
 
 #echo "Converting ASS to SRT..."
 #ffmpeg -y -i "$ASS_FILE" "$SRT_FILE"
