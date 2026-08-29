@@ -82,9 +82,9 @@ BASE_NAME="${MKV_FILE%.mkv}"
 
 # If a custom track was specified, prefix the track number
 if [ "$CUSTOM_TRACK" = true ]; then
-    ASS_FILE="${SUBTITLE_TRACK}-${BASE_NAME}.ass"
+    ASS_FILE="${BASE_NAME}.${SUBTITLE_TRACK}.ass"
 else
-    ASS_FILE="${BASE_NAME}.ass"
+    ASS_FILE="${BASE_NAME}.en.ass"
 fi
 
 echo "Extracting subtitle track $SUBTITLE_TRACK..."
