@@ -1,0 +1,183 @@
+#!/bin/bash
+
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_identify_images
+# | |_____  | |___| |    Identifies image files by MIME type and adds the correct
+# |_______| |_______|    file extension, with optional recursive directory processing.
+#
+#
+#
+
+# Identify image files without extensions in the current directory
+
+set -u
+
+# Enable unmatched globs to expand to nothing and include hidden files
+shopt -s nullglob dotglob
+
+# Define supported file extensions and MIME type mappings
+KNOWN_EXTENSIONS_REGEX='.*\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff|avif|heic|heif|svg|ico|jp2|pdf|txt|zip|mp4|mov|mp3)$'
+
+# Enable recursive processing when the -r flag is provided
+RECURSIVE=false
+
+
+# Parse command-line arguments and configure script options
+parse_arguments() {
+    while getopts ":r" option; do
+        case "$option" in
+            r)
+                RECURSIVE=true
+                ;;
+            *)
+                echo "Usage: $0 [-r]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    # Reject unexpected positional arguments
+    shift "$((OPTIND - 1))"
+
+    if [[ $# -gt 0 ]]; then
+        echo "Usage: $0 [-r]" >&2
+        return 1
+    fi
+}
+
+
+# Check whether required external commands are available
+check_dependencies() {
+    if ! command -v file >/dev/null 2>&1; then
+        echo "Error: 'file' is not installed." >&2
+        return 1
+    fi
+
+    return 0
+}
+
+
+# Check whether a filename already has a recognized extension
+has_known_extension() {
+    local file_name="$1"
+
+    [[ "${file_name,,}" =~ $KNOWN_EXTENSIONS_REGEX ]]
+}
+
+
+# Detect the file's MIME type and return its corresponding image extension
+get_image_extension() {
+    local file_path="$1"
+    local mime_type
+
+    # Detect the actual file type
+    mime_type=$(file -b --mime-type -- "$file_path") || {
+        echo "Error detecting file type: $file_path" >&2
+        return 1
+    }
+
+    # Map MIME types to file extensions
+    case "$mime_type" in
+        image/jpeg)              printf '%s\n' "jpg" ;;
+        image/png)               printf '%s\n' "png" ;;
+        image/gif)               printf '%s\n' "gif" ;;
+        image/webp)              printf '%s\n' "webp" ;;
+        image/bmp)               printf '%s\n' "bmp" ;;
+        image/tiff)              printf '%s\n' "tif" ;;
+        image/avif)              printf '%s\n' "avif" ;;
+        image/heic)              printf '%s\n' "heic" ;;
+        image/heif)              printf '%s\n' "heif" ;;
+        image/svg+xml)           printf '%s\n' "svg" ;;
+        image/jp2)               printf '%s\n' "jp2" ;;
+        image/x-icon|image/vnd.microsoft.icon)
+                                 printf '%s\n' "ico" ;;
+        *)
+            echo "Not a supported image: $file_path ($mime_type)" >&2
+            return 1
+            ;;
+    esac
+}
+
+
+# Validate and rename a single image file when necessary
+process_file() {
+    local file_path="$1"
+    local file_name="${file_path##*/}"
+    local extension
+    local new_name
+
+    # Skip directories and non-regular files
+    [[ -f "$file_path" ]] || return 0
+
+    # Skip files that already have a known file extension
+    if has_known_extension "$file_name"; then
+        echo "Skipped (has a known extension): $file_path"
+        return 0
+    fi
+
+    # Identify the image format and determine the correct extension
+    if ! extension=$(get_image_extension "$file_path"); then
+        return 0
+    fi
+
+    # Create the destination filename
+    new_name="${file_path}.${extension}"
+
+    # Avoid overwriting existing files
+    if [[ -e "$new_name" || -L "$new_name" ]]; then
+        echo "Skipped (destination exists): $new_name"
+        return 0
+    fi
+
+    # Rename the file
+    if mv -- "$file_path" "$new_name"; then
+        echo "Renamed: $file_path -> $new_name"
+    else
+        echo "Error renaming file: $file_path" >&2
+        return 1
+    fi
+}
+
+
+# Process files in the current directory or all nested directories
+process_directory() {
+    local file_path
+    local exit_status=0
+
+    if [[ "$RECURSIVE" == true ]]; then
+        # Find all regular files recursively, including hidden files and paths with spaces
+        while IFS= read -r -d '' file_path; do
+            process_file "$file_path" || exit_status=1
+        done < <(find . -type f -print0)
+    else
+        # Process files only in the current directory
+        for file_path in *; do
+            process_file "$file_path" || exit_status=1
+        done
+    fi
+
+    return "$exit_status"
+}
+
+
+# Main entry point: parse arguments, validate dependencies, and process files
+main() {
+    # Parse command-line arguments
+    parse_arguments "$@" || return 1
+
+    # Check required dependencies
+    check_dependencies || return 1
+
+    # Process the target directory
+    process_directory
+}
+
+
+# Execute main only when the script is run directly
+main "$@"
