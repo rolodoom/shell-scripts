@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |    r_img_analyze_ratios
+# | |       | |   | |    Analyze image aspect ratios and automatically detect
+# | |_____  | |___| |    the most common ratio as the crop target.
+# |_______| |_______|    Requires ImageMagick (identify) and Bash 4+.
+#
+#
+#
+
+# Analyze image aspect ratios and automatically detect
+# the most common ratio as the crop target.
+# Requires ImageMagick (identify) and Bash 4+.
+
+export LC_ALL=C
+
+ROOT="${1:-.}"
+CSV_REPORT="aspect_ratio_report.csv"
+
+if ! command -v identify >/dev/null 2>&1; then
+    echo "Error: ImageMagick 'identify' is not installed."
+    exit 1
+fi
+
+declare -A counts sum_w sum_h sum_ratio sum_kept
+total=0
+unreadable=0
+
+classify_ratio() {
+    awk -v w="$1" -v h="$2" 'BEGIN {
+        r = w / h
+
+        if      (r >= 0.6600 && r <= 0.6733) print "2:3"
+        else if (r >= 0.7425 && r <= 0.7575) print "3:4"
+        else if (r >= 0.7920 && r <= 0.8080) print "4:5"
+        else if (r >= 0.9900 && r <= 1.0100) print "1:1"
+        else if (r >= 1.2375 && r <= 1.2625) print "5:4"
+        else if (r >= 1.3200 && r <= 1.3467) print "4:3"
+        else if (r >= 1.4850 && r <= 1.5150) print "3:2"
+        else if (r >= 1.7600 && r <= 1.7956) print "16:9"
+        else if (r >= 0.5569 && r <= 0.5681) print "9:16"
+        else if (r >= 0.7071 && r <= 0.7214) print "5:7"
+        else printf "Other (~%.2f:1)\n", r
+    }'
+}
+
+# Canonical ratios for recognized groups.
+# Unknown groups use their measured average ratio instead.
+canonical_ratio() {
+    case "$1" in
+        "2:3")  echo "0.6666666667" ;;
+        "3:4")  echo "0.75" ;;
+        "4:5")  echo "0.8" ;;
+        "1:1")  echo "1.0" ;;
+        "5:4")  echo "1.25" ;;
+        "4:3")  echo "1.3333333333" ;;
+        "3:2")  echo "1.5" ;;
+        "16:9") echo "1.7777777778" ;;
+        "9:16") echo "0.5625" ;;
+        "5:7")  echo "0.7142857143" ;;
+        *)      echo "" ;;
+    esac
+}
+
+echo "Scanning: $ROOT"
+echo
+
+while IFS= read -r -d '' file; do
+    dimensions=$(identify -ping -format '%w %h' "$file" 2>/dev/null)
+
+    if [[ ! "$dimensions" =~ ^([0-9]+)[[:space:]]+([0-9]+)$ ]]; then
+        ((unreadable++))
+        continue
+    fi
+
+    width="${BASH_REMATCH[1]}"
+    height="${BASH_REMATCH[2]}"
+
+    if (( width <= 0 || height <= 0 )); then
+        ((unreadable++))
+        continue
+    fi
+
+    ratio=$(awk -v w="$width" -v h="$height" \
+        'BEGIN { printf "%.10f", w / h }')
+
+    label=$(classify_ratio "$width" "$height")
+
+    counts["$label"]=$(( ${counts["$label"]:-0} + 1 ))
+    sum_w["$label"]=$(( ${sum_w["$label"]:-0} + width ))
+    sum_h["$label"]=$(( ${sum_h["$label"]:-0} + height ))
+
+    sum_ratio["$label"]=$(awk \
+        -v old="${sum_ratio["$label"]:-0}" -v r="$ratio" \
+        'BEGIN { printf "%.10f", old + r }')
+
+    ((total++))
+done < <(
+    find "$ROOT" -type f \
+        \( -iname '*.jpg' -o -iname '*.jpeg' -o \
+           -iname '*.png' -o -iname '*.webp' -o \
+           -iname '*.tif' -o -iname '*.tiff' -o \
+           -iname '*.avif' -o -iname '*.bmp' \) -print0
+)
+
+if (( total == 0 )); then
+    echo "No readable images found."
+    exit 1
+fi
+
+# Select the most frequent ratio group automatically.
+target_label=""
+max_count=0
+
+for label in "${!counts[@]}"; do
+    if (( counts["$label"] > max_count )); then
+        max_count="${counts["$label"]}"
+        target_label="$label"
+    fi
+done
+
+# Use the standard ratio for recognized groups.
+# For an "Other" group, use the average measured ratio in that group.
+target_ratio=$(canonical_ratio "$target_label")
+
+if [[ -z "$target_ratio" ]]; then
+    target_ratio=$(awk \
+        -v s="${sum_ratio["$target_label"]}" \
+        -v n="${counts["$target_label"]}" \
+        'BEGIN { printf "%.10f", s / n }')
+fi
+
+# Calculate each group's average retained image area
+# against the automatically detected target ratio.
+for label in "${!counts[@]}"; do
+    avg_ratio=$(awk \
+        -v s="${sum_ratio["$label"]}" \
+        -v n="${counts["$label"]}" \
+        'BEGIN { printf "%.10f", s / n }')
+
+    kept=$(awk -v r="$avg_ratio" -v t="$target_ratio" \
+        'BEGIN {
+            if (r < t) kept = r / t
+            else       kept = t / r
+            printf "%.2f", kept * 100
+        }')
+
+    sum_kept["$label"]="$kept"
+done
+
+echo "ASPECT RATIO REPORT"
+echo "=========================================================================="
+printf "Detected crop target: %s (ratio %.4f:1)\n" \
+    "$target_label" "$target_ratio"
+echo "=========================================================================="
+printf "%-18s %8s %-20s %10s %12s\n" \
+    "Ratio" "Images" "Avg. dimensions" "% of all" "Target kept"
+echo "--------------------------------------------------------------------------"
+
+# Sort groups by image count, highest first.
+for label in "${!counts[@]}"; do
+    printf "%s\t%s\n" "${counts["$label"]}" "$label"
+done | sort -rn | while IFS=$'\t' read -r count label; do
+    avg_w=$(( sum_w["$label"] / count ))
+    avg_h=$(( sum_h["$label"] / count ))
+
+    pct=$(awk -v n="$count" -v t="$total" \
+        'BEGIN { printf "%.2f", n * 100 / t }')
+
+    marker=""
+    [[ "$label" == "$target_label" ]] && marker=" *"
+
+    printf "%-18s %8d %6d x %-13d %8s%% %10s%%\n" \
+        "$label$marker" "$count" "$avg_w" "$avg_h" \
+        "$pct" "${sum_kept["$label"]}"
+done
+
+echo "--------------------------------------------------------------------------"
+echo "Total analyzed: $total | Unreadable: $unreadable"
+echo "* = Automatically detected crop target"
