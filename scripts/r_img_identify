@@ -7,7 +7,7 @@
 # |_|       |_______|
 #  _         _______
 # | |       |  ___  |
-# | |       | |   | |    r_identify_images
+# | |       | |   | |    r_img_identify
 # | |_____  | |___| |    Identifies image files by MIME type and adds the correct
 # |_______| |_______|    file extension, with optional recursive directory processing.
 #
