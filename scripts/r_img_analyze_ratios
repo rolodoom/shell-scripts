@@ -20,8 +20,47 @@
 
 export LC_ALL=C
 
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS] [PATH]
+
+Analyze image aspect ratios and automatically detect the most common
+ratio as the crop target.
+
+Arguments:
+  PATH              Directory to scan recursively (default: current directory)
+
+Options:
+  -h, --help        Show this help message and exit
+
+Examples:
+  $(basename "$0")                 Scan the current directory
+  $(basename "$0") ./photos        Scan ./photos recursively
+  $(basename "$0") /path/to/images Scan a specific directory
+  $(basename "$0") --help          Show this help
+EOF
+}
+
+case "${1:-}" in
+    -h|--help)
+        usage
+        exit 0
+        ;;
+esac
+
+if [[ $# -gt 1 ]]; then
+    echo "Error: Too many arguments." >&2
+    usage >&2
+    exit 1
+fi
+
 ROOT="${1:-.}"
-CSV_REPORT="aspect_ratio_report.csv"
+
+if [[ ! -d "$ROOT" ]]; then
+    echo "Error: '$ROOT' is not a valid directory." >&2
+    usage >&2
+    exit 1
+fi
 
 if ! command -v identify >/dev/null 2>&1; then
     echo "Error: ImageMagick 'identify' is not installed."
