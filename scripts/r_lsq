@@ -6,7 +6,7 @@
 # |_|       |_______|
 #  _         _______
 # | |       |  ___  |
-# | |       | |   | |    lsq
+# | |       | |   | |    r_lsq
 # | |_____  | |___| |    List QCOW2 images with real and virtual sizes
 # |_______| |_______|
 #
