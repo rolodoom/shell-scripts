@@ -27,6 +27,27 @@ KNOWN_EXTENSIONS_REGEX='.*\.(jpg|jpeg|png|gif|webp|bmp|tif|tiff|avif|heic|heif|s
 # Enable recursive processing when the -r flag is provided
 RECURSIVE=false
 
+# help function
+help() {
+    cat << EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Description:
+    Identifies images without extensions and normalizes existing extensions.
+
+Options:
+    -r              Process recursively, including subdirectories.
+    -h, --help      Display this help message.
+
+Default behavior:
+    Process files in the current directory only.
+
+Examples:
+    $(basename "$0")              Process current directory.
+    $(basename "$0") -r           Process recursively.
+    $(basename "$0") -h           Display help.
+EOF
+}
 
 # Parse command-line arguments and configure script options
 parse_arguments() {
@@ -35,8 +56,12 @@ parse_arguments() {
             r)
                 RECURSIVE=true
                 ;;
+            h)
+                help
+                exit 0
+                ;;
             *)
-                echo "Usage: $0 [-r]" >&2
+                help >&2
                 return 1
                 ;;
         esac
@@ -46,7 +71,7 @@ parse_arguments() {
     shift "$((OPTIND - 1))"
 
     if [[ $# -gt 0 ]]; then
-        echo "Usage: $0 [-r]" >&2
+        help >&2
         return 1
     fi
 }
@@ -161,6 +186,8 @@ process_directory() {
             process_file "$file_path" || exit_status=1
         done
     fi
+
+    echo "Processing completed."
 
     return "$exit_status"
 }
