@@ -21,7 +21,7 @@ DEFAULT_QUALITY="90"
 # Display usage information.
 show_help() {
     cat <<EOF
-Usage: $0 <path> [-w <width>] [-q <quality>]
+Usage: $(basename "$0")  <path> [-w <width>] [-q <quality>]
 
 Convert supported images to WebP recursively.
 
@@ -34,11 +34,10 @@ Options:
   -h, --help      Display this help message.
 
 Examples:
-  $0 <path>
-  $0 <path> -w 800
-  $0 <path> -q 85
-  $0 <path> -w 1920 -q 85
-  $0 <path> --width 800 --quality 75
+  $(basename "$0") <path>
+  $(basename "$0") <path> -w 800
+  $(basename "$0") <path> -q 85
+  $(basename "$0") <path> -w 1920 -q 85
 EOF
 }
 
@@ -50,9 +49,9 @@ handle_interrupt() {
 
 # Validate command-line arguments.
 validate_arguments() {
-    if [[ $# -eq 0 ]]; then
+    if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
         show_help
-        return 1
+        exit 0
     fi
 
     SEARCH_PATH="$1"
