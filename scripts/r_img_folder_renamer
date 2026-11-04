@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+
+# Behavior:
+# - Recursively processes directories containing images.
+# - Normalizes folder names to lowercase.
+# - Replaces spaces and special characters with underscores.
+# - Preserves existing numeric image order when recognizable.
+# - Appends unordered images alphabetically.
+# - Preserves original file extensions.
+# - Prevents overwriting existing files.
+
+set -o nounset
+
+# ----------------------------------------
+# Configuration
+# ----------------------------------------
+
+SUPPORTED_EXTENSIONS=("jpg" "jpeg" "png" "webp" "gif" "tif" "tiff" "bmp" "heic")
+
+PREFIX=""
+TARGET_DIRECTORY=""
+
+# ----------------------------------------
+# Help
+# ----------------------------------------
+
+help() {
+    cat << EOF
+Usage:
+    $(basename "$0") <prefix> <target_directory>
+
+Description:
+    Recursively renames images using their parent folder name.
+
+Arguments:
+    prefix
+        Required filename prefix.
+
+    target_directory
+        Root directory containing the image folders.
+        Accepts absolute and relative paths.
+
+Options:
+    -h, --help
+        Display this help message.
+
+Naming format:
+    <prefix>_<folder_name>_<sequence>.<extension>
+
+Examples:
+    $(basename "$0") summer_collection /mnt/storage/photos
+    $(basename "$0") spring_campaign ./images
+    $(basename "$0") fashion_editorial "/home/user/My Photos"
+
+EOF
+}
+
+# ----------------------------------------
+# Validation
+# ----------------------------------------
+
+validate_arguments() {
+    if [[ $# -ne 2 ]]; then
+        echo "ERROR: Expected <prefix> and <target_directory>." >&2
+        help >&2
+        return 1
+    fi
+
+    if [[ ! "$1" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo "ERROR: Invalid prefix: $1" >&2
+        return 1
+    fi
+
+    if [[ ! -d "$2" ]]; then
+        echo "ERROR: Directory does not exist: $2" >&2
+        return 1
+    fi
+
+    PREFIX="$1"
+    TARGET_DIRECTORY="$(realpath "$2")"
+}
+
+# ----------------------------------------
+# Utility Functions
+# ----------------------------------------
+
+is_supported_image() {
+    local extension="${1##*.}"
+    extension="${extension,,}"
+
+    for supported in "${SUPPORTED_EXTENSIONS[@]}"; do
+        [[ "$extension" == "$supported" ]] && return 0
+    done
+
+    return 1
+}
+
+# Normalize folder names for filenames.
+normalize_folder_name() {
+    local name
+    name="$(basename "$1")"
+
+    name="${name,,}"
+    name="$(printf '%s' "$name" | sed -E 's/[^a-z0-9]+/_/g; s/^_+|_+$//g')"
+
+    printf '%s\n' "$name"
+}
+
+# Extract an existing numeric sequence from the filename.
+get_image_number() {
+    local filename
+    filename="$(basename "$1")"
+
+    if [[ "$filename" =~ \.([0-9]+)\.[^.]+$ ]]; then
+        printf '%s\n' "${BASH_REMATCH[1]}"
+        return 0
+    fi
+
+    return 1
+}
+
+# ----------------------------------------
+# Image Processing
+# ----------------------------------------
+
+rename_images() {
+    local directory="$1"
+    local folder_name
+    folder_name="$(normalize_folder_name "$directory")"
+
+    local -a ordered_files=()
+    local -a unordered_files=()
+    local -a all_files=()
+    local -a temp_files=()
+
+    local -A source_files=()
+
+    local file
+    local extension
+    local target
+    local temp
+    local index
+    local counter=0
+
+    # Collect images directly inside the directory.
+    while IFS= read -r -d '' file; do
+        is_supported_image "$file" || continue
+
+        if get_image_number "$file" >/dev/null; then
+            ordered_files+=("$file")
+        else
+            unordered_files+=("$file")
+        fi
+    done < <(find "$directory" -maxdepth 1 -type f -print0)
+
+    # Sort numbered images naturally.
+    if ((${#ordered_files[@]})); then
+        mapfile -d '' ordered_files < <(
+            printf '%s\0' "${ordered_files[@]}" | sort -z -V -f
+        )
+    fi
+
+    # Sort unordered images alphabetically.
+    if ((${#unordered_files[@]})); then
+        mapfile -d '' unordered_files < <(
+            printf '%s\0' "${unordered_files[@]}" | sort -z -f
+        )
+    fi
+
+    all_files=("${ordered_files[@]}" "${unordered_files[@]}")
+
+    ((${#all_files[@]})) || return 0
+
+    # Register original paths.
+    for file in "${all_files[@]}"; do
+        source_files["$file"]=1
+    done
+
+    # Check target collisions before renaming.
+    for index in "${!all_files[@]}"; do
+        extension="${all_files[$index]##*.}"
+        target="$directory/${PREFIX}_${folder_name}_$((index + 1)).${extension}"
+
+        if [[ (-e "$target" || -L "$target") && -z "${source_files[$target]+exists}" ]]; then
+            echo "ERROR: Target already exists: $target" >&2
+            return 1
+        fi
+    done
+
+    echo "Processing: $directory"
+
+    # First pass: move files to temporary names.
+    for file in "${all_files[@]}"; do
+        temp="$(mktemp "$directory/.rename_images.XXXXXX")" || return 1
+
+        if ! mv -- "$file" "$temp"; then
+            rm -f -- "$temp"
+            echo "ERROR: Could not move: $file" >&2
+
+            for index in "${!temp_files[@]}"; do
+                mv -- "${temp_files[$index]}" "${all_files[$index]}" ||
+                    echo "ERROR: Could not restore ${all_files[$index]}" >&2
+            done
+
+            return 1
+        fi
+
+        temp_files+=("$temp")
+    done
+
+    # Second pass: assign final filenames.
+    for index in "${!temp_files[@]}"; do
+        counter=$((counter + 1))
+        extension="${all_files[$index]##*.}"
+
+        target="$directory/${PREFIX}_${folder_name}_${counter}.${extension}"
+
+        if ! mv -- "${temp_files[$index]}" "$target"; then
+            echo "ERROR: Could not rename: ${temp_files[$index]}" >&2
+            echo "Attempting rollback..." >&2
+
+            # Restore original filenames.
+            for ((index = 0; index < ${#all_files[@]}; index++)); do
+                extension="${all_files[$index]##*.}"
+
+                if ((index < counter - 1)); then
+                    temp="$directory/${PREFIX}_${folder_name}_$((index + 1)).${extension}"
+                else
+                    temp="${temp_files[$index]}"
+                fi
+
+                mv -- "$temp" "${all_files[$index]}" ||
+                    echo "ERROR: Could not restore ${all_files[$index]}" >&2
+            done
+
+            return 1
+        fi
+
+        echo "  ${all_files[$index]##*/} -> ${target##*/}"
+    done
+}
+
+# ----------------------------------------
+# Directory Processing
+# ----------------------------------------
+
+process_directories() {
+    local directory
+
+    while IFS= read -r -d '' directory; do
+        rename_images "$directory" || return 1
+    done < <(find "$TARGET_DIRECTORY" -type d -print0)
+}
+
+# ----------------------------------------
+# Main
+# ----------------------------------------
+
+main() {
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        help
+        return 0
+    fi
+
+    validate_arguments "$@" || return 1
+
+    echo "Starting image renaming..."
+    echo "Prefix: $PREFIX"
+    echo "Target: $TARGET_DIRECTORY"
+    echo "----------------------------------------"
+
+    process_directories || return 1
+
+    echo "----------------------------------------"
+    echo "Renaming completed successfully."
+}
+
+main "$@"
