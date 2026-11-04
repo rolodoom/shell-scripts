@@ -1,0 +1,168 @@
+#!/bin/bash
+
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |
+# | |_____  | |___| |    r_img2webp
+# |_______| |_______|    Convert supported images to WebP recursively.
+#
+#
+#
+
+# Default maximum image width.
+DEFAULT_WIDTH="1200"
+DEFAULT_QUALITY="90"
+
+# Display usage information.
+show_help() {
+    cat <<EOF
+Usage: $0 <path> [-w <width>] [-q <quality>]
+
+Convert supported images to WebP recursively.
+
+Arguments:
+  <path>          Directory to search recursively for images (required).
+
+Options:
+  -w, --width     Maximum image width in pixels (default: ${DEFAULT_WIDTH}).
+  -q, --quality   WebP quality from 1 to 100 (default: ${DEFAULT_QUALITY}).
+  -h, --help      Display this help message.
+
+Examples:
+  $0 <path>
+  $0 <path> -w 800
+  $0 <path> -q 85
+  $0 <path> -w 1920 -q 85
+  $0 <path> --width 800 --quality 75
+EOF
+}
+
+# Handle interruption signals.
+handle_interrupt() {
+    printf '\nInterrupted by user.\n'
+    exit 130
+}
+
+# Validate command-line arguments.
+validate_arguments() {
+    if [[ $# -eq 0 ]]; then
+        show_help
+        return 1
+    fi
+
+    SEARCH_PATH="$1"
+    shift
+
+    MAX_WIDTH="$DEFAULT_WIDTH"
+    QUALITY="$DEFAULT_QUALITY"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -w|--width)
+                if [[ $# -lt 2 ]]; then
+                    printf 'ERROR: Missing value for %s.\n' "$1" >&2
+                    return 1
+                fi
+
+                MAX_WIDTH="$2"
+                shift 2
+                ;;
+
+            -q|--quality)
+                if [[ $# -lt 2 ]]; then
+                    printf 'ERROR: Missing value for %s.\n' "$1" >&2
+                    return 1
+                fi
+
+                QUALITY="$2"
+                shift 2
+                ;;
+
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+
+            *)
+                printf 'ERROR: Unknown option: %s\n' "$1" >&2
+                show_help >&2
+                return 1
+                ;;
+        esac
+    done
+
+    # Validate the supplied directory.
+    if [[ ! -d "$SEARCH_PATH" ]]; then
+        printf 'ERROR: The specified path does not exist or is not a directory: %s\n' "$SEARCH_PATH" >&2
+        return 1
+    fi
+
+    # Validate that the width is a positive integer.
+    if [[ ! "$MAX_WIDTH" =~ ^[1-9][0-9]*$ ]]; then
+        printf 'ERROR: Width must be a positive integer: %s\n' "$MAX_WIDTH" >&2
+        return 1
+    fi
+
+    # Validate that quality is an integer between 1 and 100.
+    if [[ ! "$QUALITY" =~ ^[0-9]+$ ]] ||
+    (( 10#$QUALITY < 1 || 10#$QUALITY > 100 )); then
+        printf 'ERROR: Quality must be an integer between 1 and 100: %s\n' "$QUALITY" >&2
+        return 1
+    fi
+}
+
+# Search recursively and convert supported images to WebP.
+convert_images() {
+    local file
+
+    while IFS= read -r -d '' file; do
+
+        # Display only the filename being processed.
+        printf 'Converting: %s\n' "$file"
+
+        # Convert the image to WebP, resize it to a maximum width,
+        # preserve the aspect ratio, and use the specified quality level.
+        # Keep the original file and suppress ImageMagick's verbose output.
+        if ! mogrify -format webp -resize "${MAX_WIDTH}x" -quality "$QUALITY" "$file"; then
+
+            # Report conversion failures to standard error and continue processing.
+            printf 'ERROR: Failed to convert: %s\n' "$file" >&2
+        fi
+
+    done < <(
+        find "$SEARCH_PATH" -type f ! -iname '*.webp' \( \
+            -iname '*.tif'  -o \
+            -iname '*.tiff' -o \
+            -iname '*.jpg'  -o \
+            -iname '*.jpeg' -o \
+            -iname '*.png'  -o \
+            -iname '*.bmp'  -o \
+            -iname '*.gif'  -o \
+            -iname '*.avif' -o \
+            -iname '*.heic' -o \
+            -iname '*.heif' \
+        \) -print0
+    )
+}
+
+# Main entry point.
+main() {
+
+    # Validate arguments before starting the conversion.
+    validate_arguments "$@" || exit 1
+
+    # Configure interruption handlers.
+    trap 'handle_interrupt' INT
+    trap 'exit 143' TERM
+
+    # Start image conversion.
+    convert_images
+}
+
+# Execute the main function.
+main "$@"
