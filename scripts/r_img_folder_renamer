@@ -179,6 +179,8 @@ rename_images() {
     # Check target collisions before renaming.
     for index in "${!all_files[@]}"; do
         extension="${all_files[$index]##*.}"
+        extension="${extension,,}"
+
         target="$directory/${PREFIX}_${folder_name}_$((index + 1)).${extension}"
 
         if [[ (-e "$target" || -L "$target") && -z "${source_files[$target]+exists}" ]]; then
@@ -212,6 +214,7 @@ rename_images() {
     for index in "${!temp_files[@]}"; do
         counter=$((counter + 1))
         extension="${all_files[$index]##*.}"
+        extension="${extension,,}"
 
         target="$directory/${PREFIX}_${folder_name}_${counter}.${extension}"
 
@@ -222,6 +225,7 @@ rename_images() {
             # Restore original filenames.
             for ((index = 0; index < ${#all_files[@]}; index++)); do
                 extension="${all_files[$index]##*.}"
+                extension="${extension,,}"
 
                 if ((index < counter - 1)); then
                     temp="$directory/${PREFIX}_${folder_name}_$((index + 1)).${extension}"
