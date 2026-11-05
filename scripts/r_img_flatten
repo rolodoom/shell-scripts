@@ -1,0 +1,174 @@
+#!/usr/bin/env bash
+
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_img_flatten
+# | |_____  | |___| |    Recursively collects images into a single destination directory,
+# |_______| |_______|    with overwrite confirmation for duplicates.
+#
+#
+
+# Exit on errors, undefined variables, and failed pipelines.
+set -o pipefail
+
+# Display script usage information.
+show_help() {
+    cat << EOF
+Usage:
+    $(basename "$0") SOURCE_DIR DESTINATION_DIR
+
+Description:
+    Recursively finds image files inside SOURCE_DIR and copies
+    them directly into the root of DESTINATION_DIR.
+
+    The original directory structure is not preserved.
+
+Arguments:
+    SOURCE_DIR       Source directory containing images.
+    DESTINATION_DIR  Destination directory for copied images.
+
+Supported image extensions:
+    jpg, jpeg, png, gif, bmp, webp, tif, tiff, svg, ico, heic
+
+Example:
+    $(basename "$0") /home/user/photos /home/user/all_images
+EOF
+}
+
+# Validate that exactly two arguments were provided.
+validate_arguments() {
+    if [[ $# -ne 2 ]]; then
+        echo "Error: Exactly two directory paths are required."
+        echo
+        show_help
+        return 1
+    fi
+
+    return 0
+}
+
+# Validate that both source and destination directories exist.
+validate_directories() {
+    local source_dir="$1"
+    local destination_dir="$2"
+
+    if [[ ! -d "$source_dir" ]]; then
+        echo "Error: Source directory does not exist: $source_dir"
+        return 1
+    fi
+
+    if [[ ! -d "$destination_dir" ]]; then
+        echo "Error: Destination directory does not exist: $destination_dir"
+        return 1
+    fi
+
+    return 0
+}
+
+# Find and copy images recursively into the destination root.
+copy_images() {
+    local source_dir="$1"
+    local destination_dir="$2"
+    local copied_count=0
+    local skipped_count=0
+    local failed_count=0
+    local file
+    local filename
+    local destination_file
+    local answer
+
+    # Find image files recursively, including filenames with spaces.
+    while IFS= read -r -d '' file; do
+
+        filename="$(basename "$file")"
+        destination_file="$destination_dir/$filename"
+
+        # Check whether a file with the same name already exists.
+        if [[ -e "$destination_file" ]]; then
+
+            echo
+            echo "WARNING: A file with the same name already exists."
+            echo "Source:      $file"
+            echo "Destination: $destination_file"
+
+            # Ask the user whether the existing file should be overwritten.
+            while true; do
+                read -r -p "Do you want to overwrite it? [y/n]: " answer
+
+                case "$answer" in
+                    [Yy])
+                        break
+                        ;;
+                    [Nn])
+                        echo "Skipped: $file"
+                        ((skipped_count++))
+                        continue 2
+                        ;;
+                    *)
+                        echo "Invalid option. Please enter y or n."
+                        ;;
+                esac
+            done
+        fi
+
+        if cp -- "$file" "$destination_file"; then
+            echo "Copied: $file"
+            ((copied_count++))
+        else
+            echo "Error copying: $file" >&2
+            ((failed_count++))
+        fi
+
+    done < <(
+        find "$source_dir" -type f \
+            \( -iname "*.jpg" \
+            -o -iname "*.jpeg" \
+            -o -iname "*.png" \
+            -o -iname "*.gif" \
+            -o -iname "*.bmp" \
+            -o -iname "*.webp" \
+            -o -iname "*.tif" \
+            -o -iname "*.tiff" \
+            -o -iname "*.svg" \
+            -o -iname "*.ico" \
+            -o -iname "*.heic" \) \
+            -print0
+    )
+
+    echo
+    echo "Image processing completed."
+    echo "Successfully copied: $copied_count"
+    echo "Skipped:             $skipped_count"
+    echo "Failed copies:       $failed_count"
+
+    [[ "$failed_count" -eq 0 ]]
+}
+
+# Main script execution.
+main() {
+
+    # Validate the number of arguments.
+    validate_arguments "$@" || exit 1
+
+    local source_dir="$1"
+    local destination_dir="$2"
+
+    # Validate directory existence.
+    validate_directories "$source_dir" "$destination_dir" || exit 1
+
+    echo "Source directory:      $source_dir"
+    echo "Destination directory: $destination_dir"
+    echo
+    echo "Searching and copying images..."
+    echo
+
+    copy_images "$source_dir" "$destination_dir"
+}
+
+# Execute the main function.
+main "$@"
