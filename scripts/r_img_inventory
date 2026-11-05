@@ -1,0 +1,347 @@
+#!/usr/bin/env bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_img_inventory
+# | |_____  | |___| |    Recursively scans directories to identify image formats
+# |_______| |_______|    and generate statistical reports or detailed file inventories.
+#
+#
+#
+
+set -o nounset
+set -o pipefail
+
+# ============================================================
+# Configuration
+# ============================================================
+
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+
+# ============================================================
+# Help
+# ============================================================
+
+show_help() {
+    cat <<EOF
+Usage:
+  ${SCRIPT_NAME} [OPTION] <directory>
+
+Description:
+  Recursively scans a directory and generates an inventory
+  of image files based on their actual MIME type.
+
+Options:
+  -s, --stats       Display image statistics only.
+  -d, --detail      Display image files grouped by type.
+  -a, --all         Display statistics and file details.
+  -h, --help        Display this help message.
+
+Default:
+  --stats
+
+Requirements:
+  - Bash 4+
+  - find
+  - file
+
+Examples:
+  ./${SCRIPT_NAME} /home/user/Pictures
+  ./${SCRIPT_NAME} --stats /home/user/Pictures
+  ./${SCRIPT_NAME} --detail /home/user/Pictures
+  ./${SCRIPT_NAME} --all .
+EOF
+}
+
+# ============================================================
+# Dependency validation
+# ============================================================
+
+check_dependencies() {
+
+    local dependencies=(
+        find
+        file
+        basename
+        sort
+        tr
+    )
+
+    local missing_dependencies=()
+    local dependency
+
+    for dependency in "${dependencies[@]}"; do
+
+        if ! command -v "$dependency" >/dev/null 2>&1; then
+            missing_dependencies+=("$dependency")
+        fi
+
+    done
+
+    # Stop execution if any required dependency is missing.
+    if [[ ${#missing_dependencies[@]} -gt 0 ]]; then
+
+        echo "ERROR: Missing required dependencies." >&2
+        echo >&2
+
+        for dependency in "${missing_dependencies[@]}"; do
+            echo "  - ${dependency}" >&2
+        done
+
+        echo >&2
+        echo "Please install the missing dependencies and try again." >&2
+        echo >&2
+
+        exit 1
+    fi
+}
+
+
+# ============================================================
+# File detection
+# ============================================================
+
+# Determine whether a filename has an extension.
+get_extension() {
+    local filename
+    filename="$(basename "$1")"
+
+    # Hidden files without another dot have no extension.
+    if [[ "$filename" != *.* ||
+          "$filename" == .* && "$filename" != *.*.* ||
+          "$filename" == *. ]]; then
+        echo "NO_EXTENSION"
+        return
+    fi
+
+    echo "${filename##*.}" | tr '[:upper:]' '[:lower:]'
+}
+
+# Detect the actual MIME type using file.
+get_mime_type() {
+    file --brief --mime-type -- "$1" 2>/dev/null
+}
+
+# Check whether the MIME type corresponds to an image.
+is_image() {
+    [[ "$1" == image/* ]]
+}
+
+# ============================================================
+# Inventory
+# ============================================================
+
+scan_directory() {
+    local directory="$1"
+    local mode="$2"
+
+    local file
+    local extension
+    local mime_type
+    local group
+    local key
+
+    local total=0
+    local with_extension=0
+    local without_extension=0
+
+    declare -A image_counts=()
+    declare -A image_files=()
+
+    while IFS= read -r -d '' file; do
+
+        extension="$(get_extension "$file")"
+        mime_type="$(get_mime_type "$file")"
+
+        # Ignore files that are not actual images.
+        if ! is_image "$mime_type"; then
+            continue
+        fi
+
+        total=$((total + 1))
+
+        # Separate files with and without extensions.
+        if [[ "$extension" == "NO_EXTENSION" ]]; then
+
+            group="NO_EXTENSION:${mime_type}"
+            without_extension=$((without_extension + 1))
+
+        else
+
+            group="EXTENSION:.${extension}"
+            with_extension=$((with_extension + 1))
+
+        fi
+
+        image_counts["$group"]=$(( ${image_counts["$group"]:-0} + 1 ))
+
+        # Store paths only when detailed output is requested.
+        if [[ "$mode" == "detail" || "$mode" == "all" ]]; then
+            image_files["$group"]+="${file}"$'\n'
+        fi
+
+    done < <(find "$directory" -type f -print0)
+
+    # --------------------------------------------------------
+    # Statistics output
+    # --------------------------------------------------------
+
+    if [[ "$mode" == "stats" || "$mode" == "all" ]]; then
+
+        echo
+        echo "=========================================="
+        echo "             IMAGE INVENTORY"
+        echo "=========================================="
+        echo "Directory: $(cd "$directory" && pwd -P)"
+        echo
+        echo "IMAGE STATISTICS"
+        echo "------------------------------------------"
+
+        printf "%-30s %10s\n" "Extension / Type" "Count"
+        echo "------------------------------------------"
+
+        for key in $(printf '%s\n' "${!image_counts[@]}" | sort); do
+
+            printf "%-30s %10d\n" \
+                "${key#EXTENSION:}" \
+                "${image_counts[$key]}"
+
+        done
+
+        echo "------------------------------------------"
+        echo "FILES WITHOUT EXTENSION"
+        echo "------------------------------------------"
+
+        for key in $(printf '%s\n' "${!image_counts[@]}" | sort); do
+
+            if [[ "$key" == NO_EXTENSION:* ]]; then
+
+                printf "%-30s %10d\n" \
+                    "${key#NO_EXTENSION:}" \
+                    "${image_counts[$key]}"
+
+            fi
+
+        done
+
+        echo "------------------------------------------"
+        printf "%-30s %10d\n" "TOTAL IMAGES" "$total"
+        printf "%-30s %10d\n" "WITH EXTENSION" "$with_extension"
+        printf "%-30s %10d\n" "WITHOUT EXTENSION" "$without_extension"
+        echo "=========================================="
+
+    fi
+
+    # --------------------------------------------------------
+    # Detailed output
+    # --------------------------------------------------------
+
+    if [[ "$mode" == "detail" || "$mode" == "all" ]]; then
+
+        echo
+        echo "IMAGE FILE DETAILS"
+        echo "=========================================="
+
+        for key in $(printf '%s\n' "${!image_counts[@]}" | sort); do
+
+            echo
+            echo "Type: ${key#EXTENSION:}"
+            [[ "$key" == NO_EXTENSION:* ]] && echo "Type: ${key#NO_EXTENSION:}"
+
+            echo "Count: ${image_counts[$key]}"
+            echo "------------------------------------------"
+
+            while IFS= read -r file; do
+                [[ -n "$file" ]] && printf "  %s\n" "$file"
+            done <<< "${image_files[$key]}"
+
+        done
+
+        echo
+        echo "=========================================="
+        echo "TOTAL IMAGES: $total"
+        echo "=========================================="
+
+    fi
+}
+
+# ============================================================
+# Main
+# ============================================================
+
+main() {
+
+    local mode="stats"
+    local directory=""
+
+    # Parse command-line arguments.
+    while [[ $# -gt 0 ]]; do
+
+        case "$1" in
+            -s|--stats)
+                mode="stats"
+                ;;
+
+            -d|--detail)
+                mode="detail"
+                ;;
+
+            -a|--all)
+                mode="all"
+                ;;
+
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+
+            -*)
+                echo "Error: Unknown option: $1" >&2
+                echo "Use '${SCRIPT_NAME} --help' for usage." >&2
+                exit 1
+                ;;
+
+            *)
+                if [[ -n "$directory" ]]; then
+                    echo "Error: Only one directory can be specified." >&2
+                    exit 1
+                fi
+
+                directory="$1"
+                ;;
+        esac
+
+        shift
+    done
+
+    # Check required dependencies.
+    check_dependencies
+
+    # Validate the target directory.
+    if [[ -z "$directory" ]]; then
+        echo "Error: A directory is required." >&2
+        echo "Use '${SCRIPT_NAME} --help' for usage." >&2
+        exit 1
+    fi
+
+    if [[ ! -d "$directory" ]]; then
+        echo "Error: Invalid directory: $directory" >&2
+        exit 1
+    fi
+
+    # Execute inventory.
+    scan_directory "$directory" "$mode"
+}
+
+# Script entry point.
+main "$@"
+
+# ============================================================
+# Entry point
+# ============================================================
+
+main "$@"
