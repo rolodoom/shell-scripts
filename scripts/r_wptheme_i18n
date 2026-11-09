@@ -1,0 +1,234 @@
+#!/bin/bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_wp-theme-i18n
+# | |_____  | |___| |    Generates a WordPress POT translation template from theme source files
+# |_______| |_______|    using WP-CLI running inside a temporary Docker container.
+#
+#
+#
+###############################################################################
+# WordPress Theme i18n Generator
+#
+# Description:
+#   Generates a WordPress POT translation template from theme source files
+#   using WP-CLI running inside a temporary Docker container.
+#
+#   Scans the theme source code for translatable strings and generates a
+#   POT file inside the theme's languages directory.
+#
+# Usage:
+#   ./wp-theme-i18n.sh <theme-folder> -d <theme-domain>
+#   ./wp-theme-i18n.sh -d <theme-domain> <theme-folder>
+#   ./wp-theme-i18n.sh --help
+#
+# Arguments:
+#   theme-folder    Path to the WordPress theme source directory.
+#
+# Options:
+#   -d, --domain    WordPress theme translation text domain.
+#   -h, --help      Display this help message.
+#
+# Features:
+#   - Executes WP-CLI through Docker.
+#   - Does not require a running WordPress installation or database.
+#   - Automatically creates the languages directory if necessary.
+#   - Uses the current user's UID and GID to preserve file permissions.
+#   - Supports options before or after positional arguments.
+#   - Validates arguments and theme directory structure.
+#
+# Output:
+#   <theme-folder>/languages/<theme-domain>.pot
+#
+# Requirements:
+#   - Linux
+#   - Bash
+#   - Docker
+#   - WordPress theme source files containing style.css
+#
+# Examples:
+#   ./wp-theme-i18n.sh ./my-theme-path -d my-theme-domain
+#   ./wp-theme-i18n.sh -d my-theme-domain ./my-theme-path
+#   ./wp-theme-i18n.sh --h
+#
+###############################################################################
+
+set -Eeuo pipefail
+
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
+
+DOCKER_IMAGE="wordpress:cli"
+DOCKER_MOUNT="/src"
+
+THEME_FOLDER=""
+THEME_DOMAIN=""
+
+# --------------------------------------------------
+# Help
+# --------------------------------------------------
+
+show_help() {
+    cat <<EOF
+Generate a WordPress POT translation file from theme source code.
+
+USAGE:
+    $(basename "$0") <theme-folder> --domain <theme-domain>
+    $(basename "$0") --domain <theme-domain> <theme-folder>
+    $(basename "$0") --help
+
+ARGUMENTS:
+    theme-folder    Path to the WordPress theme source directory.
+
+OPTIONS:
+    -d, --domain    WordPress theme translation text domain.
+    -h, --help      Display this help message.
+
+REQUIREMENTS:
+    - Docker installed and running.
+    - Theme source directory containing style.css.
+    - Valid theme text domain.
+
+OUTPUT:
+    <theme-folder>/languages/<theme-domain>.pot
+
+EXAMPLES:
+    $(basename "$0") ./my-theme-path -d my-theme-domain
+    $(basename "$0") -d my-theme-domain ./my-theme-path
+    $(basename "$0") -h
+
+NOTES:
+    - No running WordPress installation is required.
+    - No WordPress database is required.
+    - Docker runs using the current host user's UID and GID
+      to avoid file permission issues.
+    - The generated POT file is saved directly into the
+      theme's languages directory.
+
+EOF
+}
+
+# --------------------------------------------------
+# Error handling
+# --------------------------------------------------
+
+error() {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+# --------------------------------------------------
+# Argument parsing
+# --------------------------------------------------
+
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+
+            -d|--domain)
+                [[ $# -ge 2 ]] || error "Missing value for $1."
+                [[ -z "$THEME_DOMAIN" ]] || error "Domain specified more than once."
+
+                THEME_DOMAIN="$2"
+                shift 2
+                ;;
+
+            --domain=*)
+                [[ -z "$THEME_DOMAIN" ]] || error "Domain specified more than once."
+
+                THEME_DOMAIN="${1#*=}"
+                shift
+                ;;
+
+            -*)
+                error "Unknown option: $1. Use --help for usage information."
+                ;;
+
+            *)
+                [[ -z "$THEME_FOLDER" ]] || error "Theme folder specified more than once."
+
+                THEME_FOLDER="$1"
+                shift
+                ;;
+        esac
+    done
+
+    [[ -n "$THEME_FOLDER" ]] || error "Theme folder is required."
+    [[ -n "$THEME_DOMAIN" ]] || error "Theme domain is required. Use -d or --domain."
+}
+
+# --------------------------------------------------
+# Validation
+# --------------------------------------------------
+
+validate_theme() {
+    command -v docker >/dev/null 2>&1 \
+        || error "Docker is not installed or not available in PATH."
+
+    [[ -d "$THEME_FOLDER" ]] \
+        || error "Theme directory does not exist: $THEME_FOLDER"
+
+    [[ -f "$THEME_FOLDER/style.css" ]] \
+        || error "Theme stylesheet not found: $THEME_FOLDER/style.css"
+
+    [[ "$THEME_DOMAIN" =~ ^[a-zA-Z0-9_-]+$ ]] \
+        || error "Invalid theme domain. Use only letters, numbers, hyphens and underscores."
+
+    # Convert the theme directory to an absolute path.
+    THEME_FOLDER="$(cd "$THEME_FOLDER" && pwd -P)"
+}
+
+# --------------------------------------------------
+# POT generation
+# --------------------------------------------------
+
+generate_pot() {
+    local output_file="languages/${THEME_DOMAIN}.pot"
+
+    echo "Theme:       $THEME_FOLDER"
+    echo "Text domain: $THEME_DOMAIN"
+    echo "Output:      $output_file"
+    echo
+
+    # Create the languages directory if necessary.
+    mkdir -p "$THEME_FOLDER/languages" \
+        || error "Could not create languages directory."
+
+    echo "Generating POT file..."
+
+    docker run --rm \
+        --user "$(id -u):$(id -g)" \
+        -v "$THEME_FOLDER:$DOCKER_MOUNT" \
+        "$DOCKER_IMAGE" \
+        wp i18n make-pot \
+        "$DOCKER_MOUNT" \
+        "$DOCKER_MOUNT/$output_file" \
+        "--domain=$THEME_DOMAIN" \
+        || error "POT generation failed."
+
+    echo
+    echo "POT file generated successfully:"
+    echo "$THEME_FOLDER/$output_file"
+}
+
+# --------------------------------------------------
+# Main
+# --------------------------------------------------
+
+main() {
+    parse_arguments "$@"
+    validate_theme
+    generate_pot
+}
+
+main "$@"
