@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+#  _______   _______
+# |  _____| |  ___  |
+# | |       | |   | |    Rolando Ramos Torres (@rolodoom)
+# | |       | |___| |    http://rolandoramostorres.com
+# |_|       |_______|
+#  _         _______
+# | |       |  ___  |
+# | |       | |   | |    r_video_compress
+# | |_____  | |___| |    Compresses a video into a web-optimized MP4 file using H.264 encoding.
+# |_______| |_______|
+#
+
+set -Eeuo pipefail
+
+# Compression settings
+VIDEO_CODEC="libx264"
+PRESET="veryslow"
+CRF=27
+PIXEL_FORMAT="yuv420p"
+
+INPUT_FILE=""
+OUTPUT_FILE=""
+
+show_help() {
+    cat << EOF
+Video Compressor - MP4 optimized for web
+
+Usage:
+  $(basename "$0") -i INPUT_FILE -o OUTPUT_FILE
+  $(basename "$0") -h
+
+Options:
+  -i FILE    Input video file (required)
+  -o FILE    Output video file (required)
+  -h         Display this help message
+
+Compression settings:
+  Codec:        H.264 (libx264)
+  Preset:       ${PRESET}
+  CRF:          ${CRF}
+  Pixel format: ${PIXEL_FORMAT}
+  Audio:        Removed
+  Web optimized: Enabled
+
+Requirements:
+  - Bash
+  - FFmpeg
+  - FFprobe
+EOF
+}
+
+error() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
+check_dependencies() {
+    command -v ffmpeg >/dev/null 2>&1 ||
+        error "FFmpeg is not installed."
+
+    command -v ffprobe >/dev/null 2>&1 ||
+        error "FFprobe is not installed."
+}
+
+validate_input() {
+    [[ -f "$INPUT_FILE" ]] ||
+        error "Input file does not exist: $INPUT_FILE"
+
+    [[ -r "$INPUT_FILE" ]] ||
+        error "Input file is not readable: $INPUT_FILE"
+
+    ffprobe -v error -select_streams v:0 \
+        -show_entries stream=codec_type \
+        -of csv=p=0 "$INPUT_FILE" | grep -q video ||
+        error "Input file does not contain a valid video stream."
+}
+
+validate_output() {
+    [[ ! -e "$OUTPUT_FILE" ]] ||
+        error "Output file already exists: $OUTPUT_FILE"
+
+    local output_dir
+    output_dir=$(dirname "$OUTPUT_FILE")
+
+    [[ -d "$output_dir" ]] ||
+        error "Output directory does not exist: $output_dir"
+
+    [[ -w "$output_dir" ]] ||
+        error "Output directory is not writable: $output_dir"
+
+    [[ "$INPUT_FILE" != "$OUTPUT_FILE" ]] ||
+        error "Input and output files must be different."
+}
+
+compress_video() {
+    echo "Starting video compression..."
+    echo "Input:  $INPUT_FILE"
+    echo "Output: $OUTPUT_FILE"
+    echo
+
+    ffmpeg -hide_banner -n \
+        -i "$INPUT_FILE" \
+        -c:v "$VIDEO_CODEC" \
+        -preset "$PRESET" \
+        -crf "$CRF" \
+        -pix_fmt "$PIXEL_FORMAT" \
+        -an \
+        -movflags +faststart \
+        "$OUTPUT_FILE"
+
+    [[ -s "$OUTPUT_FILE" ]] ||
+        error "Compression failed: output file is empty or missing."
+
+    echo
+    echo "Compression completed successfully."
+}
+
+show_results() {
+    local input_size output_size reduction
+
+    input_size=$(stat -c%s "$INPUT_FILE")
+    output_size=$(stat -c%s "$OUTPUT_FILE")
+
+    reduction=$(awk -v i="$input_size" -v o="$output_size" \
+        'BEGIN { printf "%.2f", (1 - o/i) * 100 }')
+
+    echo
+    echo "=========================================="
+    echo "Compression results"
+    echo "=========================================="
+    echo "Original size:   $(du -h "$INPUT_FILE" | cut -f1)"
+    echo "Compressed size: $(du -h "$OUTPUT_FILE" | cut -f1)"
+    echo "Size reduction:  ${reduction}%"
+    echo "Output file:     $OUTPUT_FILE"
+    echo "=========================================="
+}
+
+main() {
+    while getopts ":i:o:h" opt; do
+        case "$opt" in
+            i) INPUT_FILE="$OPTARG" ;;
+            o) OUTPUT_FILE="$OPTARG" ;;
+            h) show_help; exit 0 ;;
+            :)
+                error "Option -$OPTARG requires an argument."
+                ;;
+            \?)
+                error "Invalid option: -$OPTARG. Use -h for help."
+                ;;
+        esac
+    done
+
+    shift $((OPTIND - 1))
+
+    [[ $# -eq 0 ]] ||
+        error "Unexpected arguments."
+
+    [[ -n "$INPUT_FILE" ]] ||
+        error "Input file is required. Use -i."
+
+    [[ -n "$OUTPUT_FILE" ]] ||
+        error "Output file is required. Use -o."
+
+    check_dependencies
+    validate_input
+    validate_output
+    compress_video
+    show_results
+}
+
+main "$@"
