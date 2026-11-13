@@ -156,11 +156,12 @@ main() {
     [[ $# -eq 0 ]] ||
         error "Unexpected arguments."
 
-    [[ -n "$INPUT_FILE" ]] ||
-        error "Input file is required. Use -i."
-
-    [[ -n "$OUTPUT_FILE" ]] ||
-        error "Output file is required. Use -o."
+    if [[ -z "$INPUT_FILE" || -z "$OUTPUT_FILE" ]]; then
+        echo "Error: Both input (-i) and output (-o) files are required." >&2
+        echo >&2
+        show_help
+        exit 1
+    fi
 
     check_dependencies
     validate_input
